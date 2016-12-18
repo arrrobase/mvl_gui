@@ -12,6 +12,8 @@ class Collection:
     """
     def __init__(self, week_end, collection_dates, washer_names, dryer_names):
 
+        self.id = id(self)
+
         self.week_end = dt.strptime(week_end, '%m/%d/%y')
         self.num_periods = len(collection_dates)
         self.period_dates = list(map(lambda date: dt.strptime(date, '%m/%d/%y'), collection_dates))
@@ -21,8 +23,6 @@ class Collection:
 
         self.df_washer = self.make_df(self.washer_names)
         self.df_dryer = self.make_df(self.dryer_names)
-
-        print self.df_washer
 
         self.grouped = None
         self.stats = None
@@ -50,10 +50,9 @@ class Collection:
 
         return df
 
-
-
     def __repr__(self):
-        return 'Week end: {}, periods: {}.'.format(self.week_end.strftime('%m-%d-%y'), self.num_periods)
+        return 'Week end: {}, periods: {}.'.format(self.week_end.strftime(
+            '%m/%d/%y'), self.num_periods)
 
     def merge_machines(self):
         return pd.concat(self.df_washer, self.df_dryer)

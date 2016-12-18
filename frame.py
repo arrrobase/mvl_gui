@@ -48,6 +48,9 @@ washer_names = ['A51',
 col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
                   washer_names, dryer_names)
 
+col2 = Collection('11/18/16', ['11/14/16', '11/18/16'],
+                  washer_names, dryer_names)
+
 
 class CalendarPanel(wx.Panel):
     """
@@ -79,19 +82,10 @@ class ListPanel(wx.Panel):
         super(ListPanel, self).__init__(parent)
 
         self.frame = parent.GetTopLevelParent()
-
-        self.col = col1
-        self.frame.col = self.col
-
-        self.washer_period_dfs = [pd.concat([self.col.df_washer[i],
-                                             self.col.df_washer['names']],
-                                            axis=1)
-                                  for i in range(self.col.num_periods)]
-
-        self.dryer_period_dfs = [pd.concat([self.col.df_dryer[i],
-                                            self.col.df_dryer['names']],
-                                           axis=1)
-                                 for i in range(self.col.num_periods)]
+        self.col = None
+        self.col_dict= None
+        self.washer_period_dfs = None
+        self.dryer_period_dfs = None
 
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -104,9 +98,19 @@ class ListPanel(wx.Panel):
         self.list_control.InsertColumn(1, 'Periods')
 
         # temp add for shape
-        for i in range(1):
-            self.list_control.InsertStringItem(i, '01/{}/2016'.format(i))
-            self.list_control.SetStringItem(i, 1, '3')
+        cols = [col1, col2]
+
+        # add cols to list control, and make lookup dict
+        self.col_dict= {}
+        for ind, col in enumerate(cols):
+            self.list_control.InsertStringItem(ind, col.week_end.strftime('%m/%d/%y'))
+            self.list_control.SetStringItem(ind, 1, str(col.num_periods))
+            self.list_control.SetItemData(ind, col.id)
+            self.col_dict[col.id] = col
+
+        # set current to last item in list control
+        self.load_collection(self.col_dict[self.list_control.GetItemData(
+            self.list_control.GetItemCount()-1)])
 
         panel_sizer.Add(self.list_control,
                         flag=wx.EXPAND,
@@ -114,6 +118,82 @@ class ListPanel(wx.Panel):
 
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
+
+        # binder for double click on list item
+        self.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.on_double_click,
+                  self.list_control)
+
+    def split_col(self):
+        """
+        Splits collection dataframes up by periods.
+        """
+        washers = [pd.concat([self.col.df_washer[i],
+                              self.col.df_washer['names']], axis=1)
+                   for i in range(self.col.num_periods)]
+
+        dryers = [pd.concat([self.col.df_dryer[i],
+                             self.col.df_dryer['names']], axis=1)
+                  for i in range(self.col.num_periods)]
+
+        return washers, dryers
+
+    def unsplit_col(self):
+        """
+        Unsplits collection dataframes back into single dfs.
+        """
+        per_period = ['weights', 'amounts']
+        dfs = [self.washer_period_dfs, self.dryer_period_dfs]
+        names = [self.col.washer_names, self.col.dryer_names]
+
+        ret = []
+
+        for i, df in enumerate(dfs):
+            re_df = pd.DataFrame()
+
+            for ind, period_df in enumerate(df):
+                period_df = period_df[['weights', 'amounts']]
+                cols = pd.MultiIndex.from_product([[ind], per_period],
+                                                  names=['Period', None])
+                period_df = pd.DataFrame(np.array(period_df), columns=cols)
+                period_df['names'] = names[i]
+                re_df = pd.concat([re_df, period_df], axis=1)
+
+            ret.append(re_df)
+
+        return ret
+
+    def load_collection(self, col):
+        # "save" currently selected
+        if self.col is not None:
+            self.col.df_washer, self.col.df_dryer = self.unsplit_col()
+            print '\nsave:'
+            print self.col
+            print self.col.df_washer[0]
+            self.col_dict[self.col.id] = self.col
+
+        self.col = col
+        self.frame.col = col
+
+        self.washer_period_dfs, self.dryer_period_dfs = self.split_col()
+
+        self.frame.machine_panel.period_panels[0].washer_grid.update_data(
+            self.washer_period_dfs[0])
+
+    def on_double_click(self, event):
+        """
+        Loads collection.
+
+        :param event:
+        """
+        selected = event.m_itemIndex
+        col = self.col_dict[self.list_control.GetItemData(selected)]
+
+        self.load_collection(col)
+        print '\nload:'
+        print col
+        print col.df_washer[0]
+
+
 
 
 class MeterPanel(wx.Panel):
@@ -279,6 +359,9 @@ class MyGrid(wx.grid.Grid):
         self.SetTable(MyDataSource(data))
         self.AutoSizeColumns()
 
+    def update_data(self, data):
+        self.SetTable(MyDataSource(data))
+
 
 class PeriodPanel(wx.Panel):
     """
@@ -323,10 +406,10 @@ class MachinePanel(wx.Panel):
 
         periods = self.frame.col.num_periods
 
-        period_panels = [PeriodPanel(self.machine_nb, i) for i in
-                         range(periods)]
+        self.period_panels = [PeriodPanel(self.machine_nb, i) for i in
+                              range(periods)]
 
-        for panel in period_panels:
+        for panel in self.period_panels:
             self.machine_nb.AddPage(panel, 'Period {} - {}'.format(
                 panel.period_num + 1, panel.period_end.strftime('%m/%d/%y')))
 
