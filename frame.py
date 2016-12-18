@@ -3,7 +3,50 @@ Main frame
 """
 
 import wx, wx.grid
+import pandas as pd
+import numpy as np
 from wx import calendar
+from money import Money
+from collection import Collection
+
+dryer_names = ['{}'.format(i) for i in range(1, 17)]
+dryer_names += ['{}'.format(i) for i in range(67, 71)]
+dryer_names += ['{}'.format(i) for i in range(72, 76)]
+dryer_names += ['20']
+dryer_names += ['{}'.format(i) for i in range(23, 28)]
+
+washer_names = ['A51',
+                'B51',
+                'S52',
+                'A40',
+                'W50',
+                'E26',
+                'F26',
+                'D25',
+                'C25',
+                'B25',
+                'A25',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                'E20',
+                'D20',
+                'C20',
+                'B20',
+                'A20'
+                ]
+
+col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
+                  washer_names, dryer_names)
 
 
 class CalendarPanel(wx.Panel):
@@ -37,6 +80,19 @@ class ListPanel(wx.Panel):
 
         self.frame = parent.GetTopLevelParent()
 
+        self.col = col1
+        self.frame.col = self.col
+
+        self.washer_period_dfs = [pd.concat([self.col.df_washer[i],
+                                             self.col.df_washer['names']],
+                                            axis=1)
+                                  for i in range(self.col.num_periods)]
+
+        self.dryer_period_dfs = [pd.concat([self.col.df_dryer[i],
+                                            self.col.df_dryer['names']],
+                                           axis=1)
+                                 for i in range(self.col.num_periods)]
+
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -48,7 +104,7 @@ class ListPanel(wx.Panel):
         self.list_control.InsertColumn(1, 'Periods')
 
         # temp add for shape
-        for i in range(50):
+        for i in range(1):
             self.list_control.InsertStringItem(i, '01/{}/2016'.format(i))
             self.list_control.SetStringItem(i, 1, '3')
 
@@ -179,75 +235,69 @@ class OtherPanel(wx.Panel):
         panel_sizer.Fit(self)
 
 
+class MyDataSource(wx.grid.PyGridTableBase):
+    def __init__(self, data):
+        super(MyDataSource, self).__init__()
+
+        self.data = data
+
+    def GetNumberCols(self):
+        return 2
+
+    def GetNumberRows(self):
+        return len(self.data)
+
+    def GetValue(self, row, col):
+        keys = {0: 'weights',
+                1: 'amounts'}
+
+        return self.data[keys[col]][row]
+
+    def SetValue(self, row, col, value):
+        keys = {0: 'weights',
+                1: 'amounts'}
+
+        if col == 0:
+            Collection.update_row(self.data, row, value)
+
+    def GetColLabelValue(self, col):
+        cols = ['Weights (lb oz)', 'Amounts']
+
+        return cols[col]
+
+    def GetRowLabelValue(self, row):
+        return self.data['names'][row]
+
+
+class MyGrid(wx.grid.Grid):
+    """
+    Class for custom grid.
+    """
+    def __init__(self, parent, data):
+        super(MyGrid, self).__init__(parent)
+
+        self.SetTable(MyDataSource(data))
+        self.AutoSizeColumns()
+
+
 class PeriodPanel(wx.Panel):
     """
-    Class for grid for washing machines
+    Class for grid for a single period.
     """
     def __init__(self, parent, period_num):
         super(PeriodPanel, self).__init__(parent)
 
         self.frame = parent.GetTopLevelParent()
+
         self.period_num = period_num
+        self.period_end = self.frame.col.period_dates[self.period_num]
 
-        self.washer_grid = wx.grid.Grid(self)
-        self.washer_grid.CreateGrid(28, 2)
-
-        self.washer_grid.SetColLabelValue(0, 'Weight (lb oz)')
-        self.washer_grid.SetColLabelValue(1, 'Est. amount')
-
-        washer_names = ['A51',
-                        'B51',
-                        'S52',
-                        'A40',
-                        'W50',
-                        'E26',
-                        'F26',
-                        'D25',
-                        'C25',
-                        'B25',
-                        'A25',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        '*12',
-                        'E20',
-                        'D20',
-                        'C20',
-                        'B20',
-                        'A20'
-                        ]
-
-        for ind, label in enumerate(washer_names):
-            self.washer_grid.SetRowLabelValue(ind, label)
-
-        for row in range(self.washer_grid.GetNumberRows()):
-            self.washer_grid.SetReadOnly(row, 1, True)
-
-        self.dryer_grid = wx.grid.Grid(self)
-        self.dryer_grid.CreateGrid(30, 2)
-
-        self.dryer_grid.SetColLabelValue(0, 'Weight (lb oz')
-        self.dryer_grid.SetColLabelValue(1, 'Est. amount')
-
-        dryer_names = ['{}'.format(i) for i in range(1, 17)]
-        dryer_names += ['{}'.format(i) for i in range(67, 71)]
-        dryer_names += ['{}'.format(i) for i in range(72, 76)]
-        dryer_names += ['20']
-        dryer_names += ['{}'.format(i) for i in range(23, 28)]
-
-        for ind, label in enumerate(dryer_names):
-            self.dryer_grid.SetRowLabelValue(ind, label)
-
-        for row in range(self.dryer_grid.GetNumberRows()):
-            self.dryer_grid.SetReadOnly(row, 1, True)
+        self.washer_grid = MyGrid(self,
+                                  self.frame.list_panel.washer_period_dfs[
+                                      period_num])
+        self.dryer_grid = MyGrid(self,
+                                 self.frame.list_panel.dryer_period_dfs[
+                                      period_num])
 
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -271,13 +321,14 @@ class MachinePanel(wx.Panel):
         # notebook to hold panels
         self.machine_nb = wx.Notebook(self)
 
-        periods = 3
+        periods = self.frame.col.num_periods
 
-        period_panels = [PeriodPanel(self.machine_nb, i+1) for i in
+        period_panels = [PeriodPanel(self.machine_nb, i) for i in
                          range(periods)]
 
         for panel in period_panels:
-            self.machine_nb.AddPage(panel, 'Period {}'.format(panel.period_num))
+            self.machine_nb.AddPage(panel, 'Period {} - {}'.format(
+                panel.period_num + 1, panel.period_end.strftime('%m/%d/%y')))
 
         panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -326,6 +377,8 @@ class MyFrame(wx.Frame):
     """
     def __init__(self):
         super(MyFrame, self).__init__(None, title='MVL collections')
+
+        self.col = None
 
         # make calendar and list
         self.calendar_panel = CalendarPanel(self)
