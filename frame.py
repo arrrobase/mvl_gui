@@ -5,6 +5,7 @@ Main frame
 import wx, wx.grid
 import pandas as pd
 import numpy as np
+import datetime
 from wx import calendar
 from money import Money
 from collection import Collection
@@ -67,13 +68,43 @@ class CalendarPanel(wx.Panel):
         panel_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # calendar control
-        self.calendar_control = calendar.CalendarCtrl(parent=self)
+        self.calendar_control = calendar.GenericCalendarCtrl(parent=self,
+                                                             style=calendar.CAL_SEQUENTIAL_MONTH_SELECTION)
 
         panel_sizer.Add(self.calendar_control,
                         flag=wx.EXPAND)
 
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
+
+        self.col_days = {}
+        for col in self.frame.list_panel.col_dict.itervalues():
+            date = col.week_end
+            if date.year not in self.col_days:
+                self.col_days[date.year] = {}
+
+            if date.month not in self.col_days[date.year]:
+                self.col_days[date.year][date.month] = []
+
+            self.col_days[date.year][date.month].append(date.day)
+
+        self.reset_cal()
+
+        self.Bind(calendar.EVT_CALENDAR_MONTH, self.reset_cal, self.calendar_control)
+
+    def reset_cal(self, event=None):
+        # turn wx.datetime into datetime.date
+        date = self.calendar_control.GetDate()
+        ymd = map(int, date.FormatISODate().split('-'))
+        date = datetime.date(*ymd)
+
+        for day in range(1, 32):
+            self.calendar_control.ResetAttr(day)
+
+        if date.year in self.col_days:
+            if date.month in self.col_days[date.year]:
+                for day in self.col_days[date.year][date.month]:
+                    self.calendar_control.SetAttr(day, calendar.CalendarDateAttr(colBack=(255, 69, 0, 100)))
 
 
 class ListPanel(wx.Panel):
@@ -169,9 +200,9 @@ class ListPanel(wx.Panel):
         # "save" currently selected
         if self.col is not None:
             self.col.df_washer, self.col.df_dryer = self.unsplit_col()
-            print '\nsave:'
-            print self.col
-            print self.col.df_washer
+            # print '\nsave:'
+            # print self.col
+            # print self.col.df_washer
             self.col_dict[self.col.id] = self.col
 
         self.col = col
@@ -192,10 +223,11 @@ class ListPanel(wx.Panel):
         selected = event.m_itemIndex
         col = self.col_dict[self.list_control.GetItemData(selected)]
 
-        self.load_collection(col)
-        print '\nload:'
-        print col
-        print col.df_washer
+        if col is not self.col:
+            self.load_collection(col)
+        # print '\nload:'
+        # print col
+        # print col.df_washer
 
 
 class MeterPanel(wx.Panel):
@@ -470,8 +502,8 @@ class MyFrame(wx.Frame):
         self.col = None
 
         # make calendar and list
-        self.calendar_panel = CalendarPanel(self)
         self.list_panel = ListPanel(self)
+        self.calendar_panel = CalendarPanel(self)
 
         # calendar and list sizer
         calendar_list_sizer = wx.BoxSizer(wx.VERTICAL)
