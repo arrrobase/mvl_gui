@@ -48,7 +48,7 @@ washer_names = ['A51',
 col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
                   washer_names, dryer_names)
 
-col2 = Collection('11/18/16', ['11/14/16', '11/18/16'],
+col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
                   washer_names, dryer_names)
 
 print col2.df_washer
@@ -111,8 +111,8 @@ class ListPanel(wx.Panel):
             self.col_dict[col.id] = col
 
         # set current to last item in list control
-        self.load_collection(self.col_dict[self.list_control.GetItemData(
-            self.list_control.GetItemCount()-1)])
+        # self.load_collection(self.col_dict[self.list_control.GetItemData(
+        #     self.list_control.GetItemCount()-1)])
 
         panel_sizer.Add(self.list_control,
                         flag=wx.EXPAND,
@@ -178,6 +178,7 @@ class ListPanel(wx.Panel):
         self.frame.col = col
 
         self.washer_period_dfs, self.dryer_period_dfs = self.split_col()
+        self.frame.load_collection()
 
         # self.frame.machine_panel.period_panels[0].washer_grid.update_data(
         #     self.washer_period_dfs[0])
@@ -405,10 +406,14 @@ class MachinePanel(wx.Panel):
         # notebook to hold panels
         self.machine_nb = wx.Notebook(self)
 
+    def load_collection(self):
+
         periods = self.frame.col.num_periods
 
         self.period_panels = [PeriodPanel(self.machine_nb, i) for i in
                               range(periods)]
+        while (self.machine_nb.GetPageCount()):
+            self.machine_nb.DeletePage(0)
 
         for panel in self.period_panels:
             self.machine_nb.AddPage(panel, 'Period {} - {}'.format(
@@ -482,6 +487,7 @@ class MyFrame(wx.Frame):
         # make meter and notebook panel
         self.top_panel = TopPanel(self)
         self.machine_panel = MachinePanel(self)
+        self.list_panel.load_collection(col1)
 
         # top and machine sizer
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -501,6 +507,9 @@ class MyFrame(wx.Frame):
         self.SetSizer(frame_sizer)
         frame_sizer.Fit(self)
         self.Show()
+
+    def load_collection(self):
+        self.machine_panel.load_collection()
 
 
 def main():
