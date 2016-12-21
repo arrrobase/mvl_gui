@@ -23,6 +23,7 @@ class Collection:
 
         self.df_washer = self.make_df(self.washer_names)
         self.df_dryer = self.make_df(self.dryer_names)
+        self.df_meters, self.df_changers, self.df_other = self.make_other_dfs()
 
         self.grouped = None
         self.stats = None
@@ -49,6 +50,43 @@ class Collection:
         df['names'] = machine_names
 
         return df
+
+    def make_other_dfs(self):
+        """
+        Makes dfs for meters, changer, and other coin amounts
+        :return:
+        """
+        meters = ['gas',
+                  'n-gas',
+                  'S262',
+                  'S263',
+                  'water',
+                  'lights']
+
+        df_meters = pd.DataFrame({'meters': meters})
+        df_meters['readings'] = ''
+
+        changers = ['1',
+                    '5',
+                    '10',
+                    '20',
+                    'a',
+                    'b',
+                    'error']
+
+        df_changers = pd.DataFrame({'bills': changers})
+        df_changers['left'] = ''
+        df_changers['right'] = ''
+
+        labels = ['Total Weekly',
+                  'Soap',
+                  'Barrel',
+                  'Purse']
+
+        amounts = [Money() for i in labels]
+        df_others = pd.DataFrame({'labels': labels, 'amounts':amounts})
+
+        return df_meters, df_changers, df_others
 
     def __repr__(self):
         return 'Week end: {}, periods: {}.'.format(self.week_end.strftime(

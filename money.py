@@ -12,11 +12,15 @@ class Money:
     throwing type error
     TODO: implement rest of class numerical methods
     """
-    def __init__(self, amount):
-        if not isinstance(amount, Decimal) and np.isnan(amount):
-            self._amount = amount
+    def __init__(self, amount=None):
+        if amount is None:
+            self._amount = np.NAN
+
         else:
-            self._amount = Decimal(amount)
+            if not isinstance(amount, Decimal) and np.isnan(amount):
+                self._amount = amount
+            else:
+                self._amount = Decimal(amount)
 
     @property
     def amount(self):

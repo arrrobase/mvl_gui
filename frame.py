@@ -46,10 +46,10 @@ washer_names = ['A51',
                 'A20'
                 ]
 
-col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
+col1 = Collection('12/25/16', ['12/21/16', '12/25/16'],
                   washer_names, dryer_names)
 
-col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
+col2 = Collection('12/18/16', ['12/14/16', '12/16/16', '12/18/16'],
                   washer_names, dryer_names)
 
 print col2.df_washer
@@ -246,20 +246,8 @@ class MeterPanel(wx.Panel):
         title = wx.StaticText(self, label='Meter Readings')
 
         # create control
-        self.grid = wx.grid.Grid(self)
-        self.grid.CreateGrid(6, 1)
-
+        self.grid = MyGrid(self, self.frame.col.df_meters, MyMetersDataSource)
         self.grid.SetColLabelSize(0)
-
-        meters = ['gas',
-                  'n-gas',
-                  'S262',
-                  'S263',
-                  'water',
-                  'lights']
-
-        for ind, label in enumerate(meters):
-            self.grid.SetRowLabelValue(ind, label)
 
         panel_sizer.Add(title,
                         border=5,
@@ -286,21 +274,8 @@ class ChangerPanel(wx.Panel):
         title = wx.StaticText(self, label='Changer Readings')
 
         # create control
-        self.grid = wx.grid.Grid(self)
-        self.grid.CreateGrid(6, 2)
-
+        self.grid = MyGrid(self, self.frame.col.df_changers, MyChangersDataSource)
         self.grid.SetColLabelSize(0)
-
-        changers = ['1',
-                    '5',
-                    '10',
-                    '20',
-                    'a',
-                    'b',
-                    'error']
-
-        for ind, label in enumerate(changers):
-            self.grid.SetRowLabelValue(ind, label)
 
         panel_sizer.Add(title,
                         border=5,
@@ -349,9 +324,9 @@ class OtherPanel(wx.Panel):
         panel_sizer.Fit(self)
 
 
-class MyDataSource(wx.grid.PyGridTableBase):
+class MyMachineDataSource(wx.grid.PyGridTableBase):
     def __init__(self, data):
-        super(MyDataSource, self).__init__()
+        super(MyMachineDataSource, self).__init__()
 
         self.data = data
 
@@ -383,18 +358,77 @@ class MyDataSource(wx.grid.PyGridTableBase):
         return self.data['names'][row]
 
 
+class MyMetersDataSource(wx.grid.PyGridTableBase):
+    def __init__(self, data):
+        super(MyMetersDataSource, self).__init__()
+
+        self.data = data
+
+    def GetNumberCols(self):
+        return 1
+
+    def GetNumberRows(self):
+        return len(self.data)
+
+    def GetValue(self, row, col):
+        return str(self.data['readings'][row])
+
+    def SetValue(self, row, col, value):
+        self.data.set_value(row, 'readings', float(value))
+
+    def GetColLabelValue(self, col):
+        return 'Readings'
+
+    def GetRowLabelValue(self, row):
+        return self.data['meters'][row]
+
+
+class MyChangersDataSource(wx.grid.PyGridTableBase):
+    def __init__(self, data):
+        super(MyChangersDataSource, self).__init__()
+
+        self.data = data
+
+    def GetNumberCols(self):
+        return 2
+
+    def GetNumberRows(self):
+        return len(self.data)
+
+    def GetValue(self, row, col):
+        keys = {0: 'left',
+                1: 'right'}
+
+        return str(self.data[keys[col]][row])
+
+    def SetValue(self, row, col, value):
+        keys = {0: 'left',
+                1: 'right'}
+
+        self.data.set_value(row, keys[col], int(value))
+
+    def GetColLabelValue(self, col):
+        # spaces to make columns larger
+        labels = ['left    ', 'right   ']
+
+        return labels[col]
+
+    def GetRowLabelValue(self, row):
+        return self.data['bills'][row]
+
+
 class MyGrid(wx.grid.Grid):
     """
     Class for custom grid.
     """
-    def __init__(self, parent, data):
+    def __init__(self, parent, data, source):
         super(MyGrid, self).__init__(parent)
 
-        self.SetTable(MyDataSource(data))
+        self.SetTable(source(data))
         self.AutoSizeColumns()
 
     def update_data(self, data):
-        self.SetTable(MyDataSource(data))
+        self.SetTable(MyMachineDataSource(data))
 
 
 class PeriodPanel(wx.Panel):
@@ -411,10 +445,12 @@ class PeriodPanel(wx.Panel):
 
         self.washer_grid = MyGrid(self,
                                   self.frame.list_panel.washer_period_dfs[
-                                      period_num])
+                                      period_num],
+                                  MyMachineDataSource)
         self.dryer_grid = MyGrid(self,
                                  self.frame.list_panel.dryer_period_dfs[
-                                      period_num])
+                                      period_num],
+                                  MyMachineDataSource)
 
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -423,7 +459,6 @@ class PeriodPanel(wx.Panel):
         panel_sizer.Add(self.dryer_grid)
 
         self.SetSizer(panel_sizer)
-        panel_sizer.Fit(self)
 
 
 class MachinePanel(wx.Panel):
@@ -517,9 +552,9 @@ class MyFrame(wx.Frame):
                         flag=wx.EXPAND)
 
         # make meter and notebook panel
-        self.top_panel = TopPanel(self)
         self.machine_panel = MachinePanel(self)
         self.list_panel.load_collection(col1)
+        self.top_panel = TopPanel(self)
 
         # top and machine sizer
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
