@@ -51,6 +51,8 @@ col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
 col2 = Collection('11/18/16', ['11/14/16', '11/18/16'],
                   washer_names, dryer_names)
 
+print col2.df_washer
+
 
 class CalendarPanel(wx.Panel):
     """
@@ -155,8 +157,9 @@ class ListPanel(wx.Panel):
                 cols = pd.MultiIndex.from_product([[ind], per_period],
                                                   names=['Period', None])
                 period_df = pd.DataFrame(np.array(period_df), columns=cols)
-                period_df['names'] = names[i]
                 re_df = pd.concat([re_df, period_df], axis=1)
+
+            re_df['names'] = names[i]
 
             ret.append(re_df)
 
@@ -168,7 +171,7 @@ class ListPanel(wx.Panel):
             self.col.df_washer, self.col.df_dryer = self.unsplit_col()
             print '\nsave:'
             print self.col
-            print self.col.df_washer[0]
+            print self.col.df_washer
             self.col_dict[self.col.id] = self.col
 
         self.col = col
@@ -176,8 +179,8 @@ class ListPanel(wx.Panel):
 
         self.washer_period_dfs, self.dryer_period_dfs = self.split_col()
 
-        self.frame.machine_panel.period_panels[0].washer_grid.update_data(
-            self.washer_period_dfs[0])
+        # self.frame.machine_panel.period_panels[0].washer_grid.update_data(
+        #     self.washer_period_dfs[0])
 
     def on_double_click(self, event):
         """
@@ -191,9 +194,7 @@ class ListPanel(wx.Panel):
         self.load_collection(col)
         print '\nload:'
         print col
-        print col.df_washer[0]
-
-
+        print col.df_washer
 
 
 class MeterPanel(wx.Panel):
