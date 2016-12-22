@@ -23,7 +23,7 @@ class Collection:
 
         self.df_washer = self.make_df(self.washer_names)
         self.df_dryer = self.make_df(self.dryer_names)
-        self.df_meters, self.df_changers, self.df_other = self.make_other_dfs()
+        self.df_meters, self.df_changers, self.df_others = self.make_other_dfs()
 
         self.grouped = None
         self.stats = None
@@ -64,7 +64,7 @@ class Collection:
                   'lights']
 
         df_meters = pd.DataFrame({'meters': meters})
-        df_meters['readings'] = ''
+        df_meters['readings'] = [np.NAN for i in meters]
 
         changers = ['1',
                     '5',
@@ -75,8 +75,8 @@ class Collection:
                     'error']
 
         df_changers = pd.DataFrame({'bills': changers})
-        df_changers['left'] = ''
-        df_changers['right'] = ''
+        df_changers['left'] = [np.NAN for i in changers]
+        df_changers['right'] = [np.NAN for i in changers]
 
         labels = ['Total Weekly',
                   'Soap',

@@ -18,7 +18,7 @@ class Money:
 
         else:
             if not isinstance(amount, Decimal) and np.isnan(amount):
-                self._amount = amount
+                self._amount = round(amount, 2)
             else:
                 self._amount = Decimal(amount)
 

@@ -119,6 +119,9 @@ class ListPanel(wx.Panel):
         self.col_dict= None
         self.washer_period_dfs = None
         self.dryer_period_dfs = None
+        self.df_meters = None
+        self.df_changers = None
+        self.df_others = None
 
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -196,7 +199,7 @@ class ListPanel(wx.Panel):
 
         return ret
 
-    def load_collection(self, col):
+    def save_collection(self):
         # "save" currently selected
         if self.col is not None:
             self.col.df_washer, self.col.df_dryer = self.unsplit_col()
@@ -205,10 +208,17 @@ class ListPanel(wx.Panel):
             # print self.col.df_washer
             self.col_dict[self.col.id] = self.col
 
+
+    def load_collection(self, col):
+        self.save_collection()
+
         self.col = col
         self.frame.col = col
 
         self.washer_period_dfs, self.dryer_period_dfs = self.split_col()
+        self.df_meters = col.df_meters
+        self.df_changers = col.df_changers
+        self.df_others = col.df_others
         self.frame.load_collection()
 
         # self.frame.machine_panel.period_panels[0].washer_grid.update_data(
@@ -302,18 +312,8 @@ class OtherPanel(wx.Panel):
         title = wx.StaticText(self, label='Other Coin Amounts')
 
         # create control
-        self.grid = wx.grid.Grid(self)
-        self.grid.CreateGrid(4, 1)
-
+        self.grid = MyGrid(self, self.frame.col.df_others, MyOthersDataSource)
         self.grid.SetColLabelSize(0)
-
-        labels = ['Total Weekly',
-                  'Soap',
-                  'Barrel',
-                  'Purse']
-
-        for ind, label in enumerate(labels):
-            self.grid.SetRowLabelValue(ind, label)
 
         panel_sizer.Add(title,
                         border=5,
@@ -340,7 +340,15 @@ class MyMachineDataSource(wx.grid.PyGridTableBase):
         keys = {0: 'weights',
                 1: 'amounts'}
 
-        return self.data[keys[col]][row]
+        val = self.data[keys[col]][row]
+
+        try:
+            if col == 1 and np.isnan(val.amount):
+                val = ''
+        except:
+            pass
+        finally:
+            return val
 
     def SetValue(self, row, col, value):
         keys = {0: 'weights',
@@ -371,7 +379,15 @@ class MyMetersDataSource(wx.grid.PyGridTableBase):
         return len(self.data)
 
     def GetValue(self, row, col):
-        return str(self.data['readings'][row])
+        val = self.data['readings'][row]
+
+        try:
+            if np.isnan(val):
+                val = ''
+        except:
+            pass
+        finally:
+            return val
 
     def SetValue(self, row, col, value):
         self.data.set_value(row, 'readings', float(value))
@@ -399,7 +415,15 @@ class MyChangersDataSource(wx.grid.PyGridTableBase):
         keys = {0: 'left',
                 1: 'right'}
 
-        return str(self.data[keys[col]][row])
+        val = self.data[keys[col]][row]
+
+        try:
+            if np.isnan(val):
+                val = ''
+        except:
+            pass
+        finally:
+            return val
 
     def SetValue(self, row, col, value):
         keys = {0: 'left',
@@ -417,6 +441,39 @@ class MyChangersDataSource(wx.grid.PyGridTableBase):
         return self.data['bills'][row]
 
 
+class MyOthersDataSource(wx.grid.PyGridTableBase):
+    def __init__(self, data):
+        super(MyOthersDataSource, self).__init__()
+
+        self.data = data
+
+    def GetNumberCols(self):
+        return 1
+
+    def GetNumberRows(self):
+        return len(self.data)
+
+    def GetValue(self, row, col):
+        val = self.data['amounts'][row]
+
+        try:
+            if np.isnan(val.amount):
+                val = ''
+        except:
+            pass
+        finally:
+            return val
+
+    def SetValue(self, row, col, value):
+        self.data.set_value(row, 'amounts', Money(float(value)))
+
+    def GetColLabelValue(self, col):
+        return 'Amounts'
+
+    def GetRowLabelValue(self, row):
+        return self.data['labels'][row]
+
+
 class MyGrid(wx.grid.Grid):
     """
     Class for custom grid.
@@ -427,8 +484,8 @@ class MyGrid(wx.grid.Grid):
         self.SetTable(source(data))
         self.AutoSizeColumns()
 
-    def update_data(self, data):
-        self.SetTable(MyMachineDataSource(data))
+    def update_data(self, data, source):
+        self.SetTable(source(data))
 
 
 class PeriodPanel(wx.Panel):
@@ -455,7 +512,9 @@ class PeriodPanel(wx.Panel):
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        panel_sizer.Add(self.washer_grid)
+        panel_sizer.Add(self.washer_grid,
+                        border=5,
+                        flag=wx.RIGHT)
         panel_sizer.Add(self.dryer_grid)
 
         self.SetSizer(panel_sizer)
@@ -526,6 +585,12 @@ class TopPanel(wx.Panel):
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
 
+    def load_collection(self):
+        self.meter_panel.grid.update_data(self.frame.list_panel.df_meters, MyMetersDataSource)
+        self.changer_panel.grid.update_data(self.frame.list_panel.df_changers, MyChangersDataSource)
+        self.other_panel.grid.update_data(self.frame.list_panel.df_others, MyOthersDataSource)
+        self.Refresh()
+
 
 class MyFrame(wx.Frame):
     """
@@ -555,6 +620,7 @@ class MyFrame(wx.Frame):
         self.machine_panel = MachinePanel(self)
         self.list_panel.load_collection(col1)
         self.top_panel = TopPanel(self)
+        self.top_panel.load_collection()
 
         # top and machine sizer
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -577,6 +643,7 @@ class MyFrame(wx.Frame):
 
     def load_collection(self):
         self.machine_panel.load_collection()
+        # self.top_panel.load_collection()
 
 
 def main():
