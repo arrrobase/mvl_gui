@@ -92,6 +92,9 @@ class Collection:
         return 'Week end: {}, periods: {}.'.format(self.week_end.strftime(
             '%m/%d/%y'), self.num_periods)
 
+    def __lt__(self, other):
+        return self.week_end < other.week_end
+
     def merge_machines(self):
         return pd.concat(self.df_washer, self.df_dryer)
 
