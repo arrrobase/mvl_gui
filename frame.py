@@ -11,7 +11,7 @@ from money import Money
 from collection import Collection
 from copy import deepcopy
 
-dryer_names = ['{}'.format(i) for i in range(1, 17)]
+dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 dryer_names += ['{}'.format(i) for i in range(67, 71)]
 dryer_names += ['{}'.format(i) for i in range(72, 76)]
 dryer_names += ['20']
@@ -70,7 +70,7 @@ class ListPanel(wx.Panel):
         self.frame = parent.GetTopLevelParent()
 
         self.col = None
-        self.col_dict= None
+        self.col_dict = None
 
         self.washer_period_dfs = None
         self.dryer_period_dfs = None
@@ -151,28 +151,12 @@ class ListPanel(wx.Panel):
 
         return ret
 
-    def save_collection(self):
-        # "save" currently selected
-        if self.col is not None:
-            self.col.df_washer, self.col.df_dryer = self.unsplit_col()
-            self.col.df_meters = \
-                deepcopy(self.frame.top_panel.meter_panel.grid.Table.data)
-            self.col.df_changers = \
-                deepcopy(self.frame.top_panel.changer_panel.grid.Table.data)
-            self.col.df_others = \
-                deepcopy(self.frame.top_panel.other_panel.grid.Table.data)
-            # print '\nsave:', self.col
-            # print self.col.df_meters
-            # print self.col.df_washer
-            self.col_dict[self.col.id] = self.col
-
     def load_collection(self, col):
         """
         Loads in new collection.
         :param col:
         """
         if col is not self.col:
-            self.save_collection()
             self.update(col)
 
     def update(self, col):
@@ -200,7 +184,16 @@ class ListPanel(wx.Panel):
         col = self.col_dict[self.list_control.GetItemData(selected)]
 
         if col is not self.col:
+            self.frame.save_collection()
             self.frame.load_collection(col)
+
+    def save_collection(self, saves):
+        # "save" currently selected
+        if self.col is not None:
+            self.col.df_washer, self.col.df_dryer = self.unsplit_col()
+            self.col.df_meters, self.col.df_changers, self.col.df_others = saves
+
+            self.col_dict[self.col.id] = self.col
 
 
 class CalendarPanel(wx.Panel):
@@ -691,6 +684,12 @@ class MyFrame(wx.Frame):
         self.machine_panel.load_collection()
         self.top_panel.load_collection()
 
+    def save_collection(self):
+        saves = [deepcopy(panel.grid.Table.data) for panel in self.top_panel.GetChildren()]
+        self.list_panel.save_collection(saves)
+
+
+
 
 def main():
     """
@@ -704,5 +703,5 @@ def main():
     # run app
     app.MainLoop()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
