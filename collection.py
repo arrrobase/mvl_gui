@@ -99,9 +99,24 @@ class Collection:
         return pd.concat(self.df_washer, self.df_dryer)
 
     @staticmethod
-    def update_row(df, row, value):
+    def update(df, row, value):
         df.set_value(row, 'weights', value)
-        df.set_value(row, 'amounts', Money.from_weight(value))
+        # df.set_value(row, 'amounts', Money.from_weight(value))
+
+        # propagate changes
+        period = list(map(Money.from_weight, df['weights']))
+        diff = [period[0]] + list(np.diff(period))
+
+        print
+        for i in diff:
+            print i
+
+        for ind, i in enumerate(diff):
+            if i < 0:
+                diff[ind] = Money.from_weight(df['weights'][ind])
+
+        df['amounts'] = diff
+
 
     @staticmethod
     def make_weights(n):

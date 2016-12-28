@@ -279,6 +279,10 @@ class MeterPanel(wx.Panel):
         panel_sizer.Add(title,
                         border=5,
                         flag=wx.TOP | wx.BOTTOM | wx.LEFT)
+
+        panel_sizer.Add(wx.StaticLine(self),
+                        flag=wx.EXPAND)
+
         panel_sizer.Add(self.grid)
 
         self.SetSizer(panel_sizer)
@@ -315,6 +319,10 @@ class ChangerPanel(wx.Panel):
         panel_sizer.Add(title,
                         border=5,
                         flag=wx.TOP | wx.BOTTOM | wx.LEFT)
+
+        panel_sizer.Add(wx.StaticLine(self),
+                        flag=wx.EXPAND)
+
         panel_sizer.Add(self.grid)
 
         self.SetSizer(panel_sizer)
@@ -356,6 +364,10 @@ class OtherPanel(wx.Panel):
         panel_sizer.Add(title,
                         border=5,
                         flag=wx.TOP | wx.BOTTOM | wx.LEFT)
+
+        panel_sizer.Add(wx.StaticLine(self),
+                        flag=wx.EXPAND)
+
         panel_sizer.Add(self.grid)
 
         self.SetSizer(panel_sizer)
@@ -398,7 +410,11 @@ class MyMachineDataSource(wx.grid.PyGridTableBase):
 
     def SetValue(self, row, col, value):
         if col == 0:
-            Collection.update_row(self.data, row, value)
+            Collection.update(self.data, row, value)
+
+        msg = wx.grid.GridTableMessage(self.GetView().Table,
+                                       wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
+        self.GetView().ProcessTableMessage(msg)
 
     def GetColLabelValue(self, col):
         cols = ['Weights (lb oz)', 'Amounts']
@@ -616,12 +632,19 @@ class TopPanel(wx.Panel):
                         flag=wx.EXPAND | wx.LEFT,
                         border=3)
 
+        panel_sizer.Add(wx.StaticLine(self, style=wx.LI_VERTICAL),
+                        flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
+                        border=5)
+
         panel_sizer.Add(self.changer_panel,
-                        flag=wx.EXPAND | wx.LEFT,
-                        border=3)
+                        flag=wx.EXPAND)
+
+        panel_sizer.Add(wx.StaticLine(self, style=wx.LI_VERTICAL),
+                        flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
+                        border=5)
 
         panel_sizer.Add(self.other_panel,
-                        flag=wx.EXPAND | wx.LEFT,
+                        flag=wx.EXPAND | wx.RIGHT,
                         border=3)
 
         self.SetSizer(panel_sizer)
@@ -667,6 +690,9 @@ class MyFrame(wx.Frame):
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
 
         top_machine_sizer.Add(self.top_panel)
+        top_machine_sizer.Add(wx.StaticLine(self),
+                              border=5,
+                              flag=wx.TOP | wx.BOTTOM | wx.EXPAND)
         top_machine_sizer.Add(self.machine_panel)
 
         # frame sizer
@@ -680,6 +706,10 @@ class MyFrame(wx.Frame):
 
         self.SetSizer(frame_sizer)
         frame_sizer.Fit(self)
+
+        # change background color to match panels on win32
+        self.SetBackgroundColour(wx.NullColour)
+
         self.Show()
 
     def load_collection(self, col):
