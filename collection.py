@@ -107,10 +107,6 @@ class Collection:
         period = list(map(Money.from_weight, df['weights']))
         diff = [period[0]] + list(np.diff(period))
 
-        print
-        for i in diff:
-            print i
-
         for ind, i in enumerate(diff):
             if i < 0:
                 diff[ind] = Money.from_weight(df['weights'][ind])

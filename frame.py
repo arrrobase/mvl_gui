@@ -718,8 +718,9 @@ class MyFrame(wx.Frame):
         self.top_panel.load_collection()
 
     def save_collection(self):
-        saves = [deepcopy(panel.grid.Table.data) for panel in
-                 self.top_panel.GetChildren()]
+        # get rid of static lines
+        panels = list(self.top_panel.GetChildren())[:-2]
+        saves = [deepcopy(panel.grid.Table.data) for panel in panels]
 
         self.list_panel.save_collection(saves)
 
