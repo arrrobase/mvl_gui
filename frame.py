@@ -47,13 +47,16 @@ washer_names = ['A51',
                 'A20'
                 ]
 
-col1 = Collection('12/25/16', ['12/21/16', '12/25/16'],
+col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
                   washer_names, dryer_names)
 
-col2 = Collection('12/18/16', ['12/14/16', '12/16/16', '12/18/16'],
+col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
                   washer_names, dryer_names)
 
-empty_col = Collection('12/18/16', ['12/14/16', '12/16/16', '12/18/16'],
+today = datetime.datetime.now()
+
+empty_col = Collection(today.strftime('%m/%d/%y'), [(today - datetime.timedelta(days=4)).strftime('%m/%d/%y'),
+                                                    today.strftime('%m/%d/%y')],
                        washer_names, dryer_names)
 
 
@@ -158,15 +161,26 @@ class ListPanel(wx.Panel):
                 deepcopy(self.frame.top_panel.changer_panel.grid.Table.data)
             self.col.df_others = \
                 deepcopy(self.frame.top_panel.other_panel.grid.Table.data)
-            print '\nsave:',
-            print self.col
-            print self.col.df_meters
+            # print '\nsave:', self.col
+            # print self.col.df_meters
             # print self.col.df_washer
             self.col_dict[self.col.id] = self.col
 
     def load_collection(self, col):
-        self.save_collection()
+        """
+        Loads in new collection.
+        :param col:
+        """
+        if col is not self.col:
+            self.save_collection()
+            self.update(col)
 
+    def update(self, col):
+        """
+        Updates proper attributes.
+
+        :param col:
+        """
         self.col = col
         self.frame.col = col
 
@@ -176,16 +190,9 @@ class ListPanel(wx.Panel):
         self.df_changers = col.df_changers
         self.df_others = col.df_others
 
-        print '\nload:', self.col
-        print self.col.df_meters
-        self.frame.load_collection()
-
-        # self.frame.machine_panel.period_panels[0].washer_grid.update_data(
-        #     self.washer_period_dfs[0])
-
     def on_double_click(self, event):
         """
-        Loads collection.
+        Updates attributes, calls load.
 
         :param event:
         """
@@ -193,10 +200,7 @@ class ListPanel(wx.Panel):
         col = self.col_dict[self.list_control.GetItemData(selected)]
 
         if col is not self.col:
-            self.load_collection(col)
-        # print '\nload:'
-        # print col
-        # print col.df_washer
+            self.frame.load_collection(col)
 
 
 class CalendarPanel(wx.Panel):
@@ -321,7 +325,7 @@ class ChangerPanel(wx.Panel):
 
         for i, column in enumerate([left, right]):
             for j, value in enumerate(column):
-                print i, j, value
+                # print i, j, value
                 self.grid.Table.SetValue(j, i, value)
 
         msg = wx.grid.GridTableMessage(self.grid.Table,
@@ -544,6 +548,7 @@ class PeriodPanel(wx.Panel):
                                   self.frame.list_panel.washer_period_dfs[
                                       period_num],
                                   MyMachineDataSource)
+
         self.dryer_grid = MyGrid(self,
                                  self.frame.list_panel.dryer_period_dfs[
                                       period_num],
@@ -659,8 +664,8 @@ class MyFrame(wx.Frame):
         # make meter and notebook panel
         self.machine_panel = MachinePanel(self)
         self.top_panel = TopPanel(self)
-        # self.list_panel.load_collection(col1)
-        # self.top_panel.load_collection()
+
+        self.load_collection(empty_col)
 
         # top and machine sizer
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -681,7 +686,8 @@ class MyFrame(wx.Frame):
         frame_sizer.Fit(self)
         self.Show()
 
-    def load_collection(self):
+    def load_collection(self, col):
+        self.list_panel.load_collection(col)
         self.machine_panel.load_collection()
         self.top_panel.load_collection()
 
