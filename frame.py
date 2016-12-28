@@ -55,8 +55,9 @@ col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
 
 today = datetime.datetime.now()
 
-empty_col = Collection(today.strftime('%m/%d/%y'), [(today - datetime.timedelta(days=4)).strftime('%m/%d/%y'),
-                                                    today.strftime('%m/%d/%y')],
+empty_col = Collection(today.strftime('%m/%d/%y'),
+                       [(today - datetime.timedelta(days=4)).strftime('%m/%d/%y'),
+                        today.strftime('%m/%d/%y')],
                        washer_names, dryer_names)
 
 
@@ -93,9 +94,10 @@ class ListPanel(wx.Panel):
         cols = [col1, col2]
 
         # add cols to list control, and make lookup dict
-        self.col_dict= {}
+        self.col_dict = {}
         for ind, col in enumerate(sorted(cols)):
-            self.list_control.InsertStringItem(ind, col.week_end.strftime('%m/%d/%y'))
+            we_string = col.week_end.strftime('%m/%d/%y')
+            self.list_control.InsertStringItem(ind, we_string)
             self.list_control.SetStringItem(ind, 1, str(col.num_periods))
             self.list_control.SetItemData(ind, col.id)
             self.col_dict[col.id] = col
@@ -151,6 +153,27 @@ class ListPanel(wx.Panel):
 
         return ret
 
+    def on_double_click(self, event):
+        """
+        Updates attributes, calls load.
+
+        :param event:
+        """
+        selected = event.m_itemIndex
+        col = self.col_dict[self.list_control.GetItemData(selected)]
+
+        if col is not self.col:
+            self.frame.save_collection()
+            self.frame.load_collection(col)
+
+    def save_collection(self, saves):
+        # "save" currently selected
+        if self.col is not None:
+            self.col.df_washer, self.col.df_dryer = self.unsplit_col()
+            self.col.df_meters, self.col.df_changers, self.col.df_others = saves
+
+            self.col_dict[self.col.id] = self.col
+
     def load_collection(self, col):
         """
         Loads in new collection.
@@ -174,27 +197,6 @@ class ListPanel(wx.Panel):
         self.df_changers = col.df_changers
         self.df_others = col.df_others
 
-    def on_double_click(self, event):
-        """
-        Updates attributes, calls load.
-
-        :param event:
-        """
-        selected = event.m_itemIndex
-        col = self.col_dict[self.list_control.GetItemData(selected)]
-
-        if col is not self.col:
-            self.frame.save_collection()
-            self.frame.load_collection(col)
-
-    def save_collection(self, saves):
-        # "save" currently selected
-        if self.col is not None:
-            self.col.df_washer, self.col.df_dryer = self.unsplit_col()
-            self.col.df_meters, self.col.df_changers, self.col.df_others = saves
-
-            self.col_dict[self.col.id] = self.col
-
 
 class CalendarPanel(wx.Panel):
     """
@@ -210,7 +212,7 @@ class CalendarPanel(wx.Panel):
 
         # calendar control
         self.calendar_control = calendar.GenericCalendarCtrl(parent=self,
-                                                             style=calendar.CAL_SEQUENTIAL_MONTH_SELECTION)
+            style=calendar.CAL_SEQUENTIAL_MONTH_SELECTION)
 
         panel_sizer.Add(self.calendar_control,
                         flag=wx.EXPAND)
@@ -231,8 +233,13 @@ class CalendarPanel(wx.Panel):
 
         self.reset_cal()
 
-        self.Bind(calendar.EVT_CALENDAR_MONTH, self.reset_cal, self.calendar_control)
-        self.Bind(calendar.EVT_CALENDAR_YEAR, self.reset_cal, self.calendar_control)
+        self.Bind(calendar.EVT_CALENDAR_MONTH,
+                  self.reset_cal,
+                  self.calendar_control)
+
+        self.Bind(calendar.EVT_CALENDAR_YEAR,
+                  self.reset_cal,
+                  self.calendar_control)
 
     def reset_cal(self, event=None):
         # turn wx.datetime into datetime.date
@@ -246,7 +253,8 @@ class CalendarPanel(wx.Panel):
         if date.year in self.col_days:
             if date.month in self.col_days[date.year]:
                 for day in self.col_days[date.year][date.month]:
-                    self.calendar_control.SetAttr(day, calendar.CalendarDateAttr(colBack=(255, 69, 0, 100)))
+                    self.calendar_control.SetAttr(day,
+                        calendar.CalendarDateAttr(colBack=(255, 69, 0, 100)))
 
 
 class MeterPanel(wx.Panel):
@@ -389,9 +397,6 @@ class MyMachineDataSource(wx.grid.PyGridTableBase):
             return val
 
     def SetValue(self, row, col, value):
-        keys = {0: 'weights',
-                1: 'amounts'}
-
         if col == 0:
             Collection.update_row(self.data, row, value)
 
@@ -538,14 +543,12 @@ class PeriodPanel(wx.Panel):
         self.period_end = self.frame.col.period_dates[self.period_num]
 
         self.washer_grid = MyGrid(self,
-                                  self.frame.list_panel.washer_period_dfs[
-                                      period_num],
-                                  MyMachineDataSource)
+            self.frame.list_panel.washer_period_dfs[period_num],
+            MyMachineDataSource)
 
         self.dryer_grid = MyGrid(self,
-                                 self.frame.list_panel.dryer_period_dfs[
-                                      period_num],
-                                  MyMachineDataSource)
+            self.frame.list_panel.dryer_period_dfs[period_num],
+            MyMachineDataSource)
 
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -576,7 +579,8 @@ class MachinePanel(wx.Panel):
 
         self.period_panels = [PeriodPanel(self.machine_nb, i) for i in
                               range(periods)]
-        while (self.machine_nb.GetPageCount()):
+
+        while self.machine_nb.GetPageCount():
             self.machine_nb.DeletePage(0)
 
         for panel in self.period_panels:
@@ -647,12 +651,11 @@ class MyFrame(wx.Frame):
         calendar_list_sizer = wx.BoxSizer(wx.VERTICAL)
 
         calendar_list_sizer.Add(self.calendar_panel,
-                        # proportion=1,
-                        flag=wx.EXPAND)
+                                flag=wx.EXPAND)
 
         calendar_list_sizer.Add(self.list_panel,
-                        proportion=1,
-                        flag=wx.EXPAND)
+                                proportion=1,
+                                flag=wx.EXPAND)
 
         # make meter and notebook panel
         self.machine_panel = MachinePanel(self)
@@ -685,10 +688,10 @@ class MyFrame(wx.Frame):
         self.top_panel.load_collection()
 
     def save_collection(self):
-        saves = [deepcopy(panel.grid.Table.data) for panel in self.top_panel.GetChildren()]
+        saves = [deepcopy(panel.grid.Table.data) for panel in
+                 self.top_panel.GetChildren()]
+
         self.list_panel.save_collection(saves)
-
-
 
 
 def main():
