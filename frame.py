@@ -197,6 +197,27 @@ class ListPanel(wx.Panel):
         self.df_changers = col.df_changers
         self.df_others = col.df_others
 
+    def add_collection(self, col):
+        """
+        Adds a new collection.
+        :param col:
+        """
+        we_string = col.week_end.strftime('%m/%d/%y')
+        ind = self.list_control.GetItemCount()
+
+        self.list_control.InsertStringItem(ind, we_string)
+        self.list_control.SetStringItem(ind, 1, str(col.num_periods))
+        self.list_control.SetItemData(ind, col.id)
+        self.col_dict[col.id] = col
+
+        # update calendar panel
+        self.frame.calendar_panel.add_day(col.week_end)
+        self.frame.calendar_panel.reset_cal()
+
+        if col is not self.col:
+            self.frame.save_collection()
+            self.frame.load_collection(col)
+
 
 class CalendarPanel(wx.Panel):
     """
@@ -221,15 +242,10 @@ class CalendarPanel(wx.Panel):
         panel_sizer.Fit(self)
 
         self.col_days = {}
+
         for col in self.frame.list_panel.col_dict.itervalues():
             date = col.week_end
-            if date.year not in self.col_days:
-                self.col_days[date.year] = {}
-
-            if date.month not in self.col_days[date.year]:
-                self.col_days[date.year][date.month] = []
-
-            self.col_days[date.year][date.month].append(date.day)
+            self.add_day(date)
 
         self.reset_cal()
 
@@ -240,6 +256,15 @@ class CalendarPanel(wx.Panel):
         self.Bind(calendar.EVT_CALENDAR_YEAR,
                   self.reset_cal,
                   self.calendar_control)
+
+    def add_day(self, date):
+        if date.year not in self.col_days:
+            self.col_days[date.year] = {}
+
+        if date.month not in self.col_days[date.year]:
+            self.col_days[date.year][date.month] = []
+
+        self.col_days[date.year][date.month].append(date.day)
 
     def reset_cal(self, event=None):
         # turn wx.datetime into datetime.date
@@ -255,6 +280,9 @@ class CalendarPanel(wx.Panel):
                 for day in self.col_days[date.year][date.month]:
                     self.calendar_control.SetAttr(day,
                         calendar.CalendarDateAttr(colBack=(255, 69, 0, 100)))
+
+        if event is None:
+            self.Refresh()
 
 
 class MeterPanel(wx.Panel):
@@ -657,6 +685,135 @@ class TopPanel(wx.Panel):
         self.other_panel.update_grid(self.frame.col.df_others['amounts'])
 
 
+class MyMenuBar(wx.MenuBar):
+    """
+    Class for custom menu bar.
+    """
+    def __init__(self, parent):
+        super(MyMenuBar, self).__init__()
+
+        self.frame = parent
+
+        # menus
+        file_menu = wx.Menu()
+
+        # file menus
+        file_new = file_menu.Append(wx.ID_NEW, '&New', 'New collection')
+        file_save = file_menu.Append(wx.ID_SAVE, '&Save', 'Save collection')
+        file_quit = file_menu.Append(wx.ID_EXIT, '&Quit', 'Quit application')
+
+        # add top level menus to menu bar
+        self.Append(file_menu, '&File')
+
+        self.Bind(wx.EVT_MENU, self.on_file_new, file_new)
+        self.Bind(wx.EVT_MENU, self.on_file_save, file_save)
+        # self.Bind(wx.EVT_MENU, self.on_file_quit, file_quit)
+
+    def on_file_new(self, event):
+        """
+        Passes new call to frame.
+        :param event:
+        """
+        self.frame.new_collection()
+
+    def on_file_save(self, event):
+        """
+        Passes new call to frame.
+        :param event:
+        """
+        self.frame.save_collection()
+        self.frame.col.to_csv()
+
+
+class MyCollectionDialog(wx.Dialog):
+    def __init__(self, title):
+        super(MyCollectionDialog, self).__init__(parent=None, title=title)
+
+        week_end_label = wx.StaticText(self, label='Week end:')
+        self.week_end_ctrl = wx.DatePickerCtrl(self)
+        # week_end_ctrl.SetRange(wx.DateTime.Today(), wx.DateTime.Today())
+
+        periods_label = wx.StaticText(self, label='Periods:')
+        self.periods_ctrl = wx.SpinCtrl(self,
+                                        min=1,
+                                        initial=1,
+                                        style=wx.SP_ARROW_KEYS)
+
+        # inputs sizer
+        self.inputs_sizer = wx.FlexGridSizer(rows=50, cols=2, vgap=5,
+                                        hgap=5)
+
+        self.inputs_sizer.Add(week_end_label,
+                         border=4,
+                         flag=wx.TOP)
+        self.inputs_sizer.Add(self.week_end_ctrl)
+
+        self.inputs_sizer.Add(periods_label,
+                         border=4,
+                         flag=wx.TOP)
+        self.inputs_sizer.Add(self.periods_ctrl)
+
+        self.period_date_ctrls = []
+        self.period_date_labels = []
+
+        for i in range(1):
+            self.add_period_ctrl()
+
+        self.dlg_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.dlg_sizer.Add(self.inputs_sizer,
+                      proportion=0,
+                      flag=wx.EXPAND | wx.TOP | wx.LEFT,
+                      border=5)
+
+        button_sizer = self.CreateSeparatedButtonSizer(wx.OK | wx.CANCEL)
+        self.dlg_sizer.Add(button_sizer,
+                      proportion=0,
+                      flag=wx.EXPAND | wx.TOP | wx.BOTTOM,
+                      border=10)
+
+        self.SetSizer(self.dlg_sizer)
+        self.dlg_sizer.Fit(self)
+
+        self.Bind(wx.EVT_SPINCTRL, self.on_period_ctrl, self.periods_ctrl)
+
+    def add_period_ctrl(self):
+        num = len(self.period_date_ctrls) + 1
+        label = '    Period {} end:'.format(num)
+        label = wx.StaticText(self, label=label)
+
+        ctrl = wx.DatePickerCtrl(self)
+
+        self.period_date_labels.append(label)
+        self.period_date_ctrls.append(ctrl)
+
+        self.inputs_sizer.Add(label,
+                              border=4,
+                              flag=wx.TOP)
+        self.inputs_sizer.Add(ctrl)
+
+    def on_period_ctrl(self, event):
+        periods = event.GetInt()
+        ind = len(self.period_date_ctrls)
+        if periods > ind:
+            self.add_period_ctrl()
+
+        else:
+            childs = list(self.inputs_sizer.GetChildren())
+            ind = len(childs) - 1
+
+            self.inputs_sizer.Remove(ind)
+            self.inputs_sizer.Remove(ind-1)
+
+            self.period_date_ctrls[-1].Destroy()
+            self.period_date_ctrls.pop(-1)
+            self.period_date_labels[-1].Destroy()
+            self.period_date_labels.pop(-1)
+
+        self.dlg_sizer.Fit(self)
+        self.Refresh()
+
+
 class MyFrame(wx.Frame):
     """
     Class for generating main frame.
@@ -686,6 +843,10 @@ class MyFrame(wx.Frame):
 
         self.load_collection(empty_col)
 
+        last = self.list_panel.list_control.GetItemCount() - 1
+        col = self.list_panel.col_dict[self.list_panel.list_control.GetItemData(last)]
+        self.load_collection(col)
+
         # top and machine sizer
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -703,6 +864,10 @@ class MyFrame(wx.Frame):
 
         frame_sizer.Add(top_machine_sizer,
                         flag=wx.EXPAND)
+
+        # menu bar
+        self.menu_bar = MyMenuBar(self)
+        self.SetMenuBar(self.menu_bar)
 
         self.SetSizer(frame_sizer)
         frame_sizer.Fit(self)
@@ -723,6 +888,40 @@ class MyFrame(wx.Frame):
         saves = [deepcopy(panel.grid.Table.data) for panel in panels]
 
         self.list_panel.save_collection(saves)
+
+    def new_collection(self):
+        """
+        Creates new collection and adds to list.
+        :return:
+        """
+        week_end, period_dates = self.new_collection_prompt()
+
+        if week_end is None:
+            return
+
+        new_col = Collection(week_end, period_dates, washer_names, dryer_names)
+        print new_col
+
+        self.list_panel.add_collection(new_col)
+
+    def new_collection_prompt(self):
+        """
+        Prompts for week end, num of periods, and period dates.
+        :return:
+        """
+        dlg = MyCollectionDialog(title='Collection dates')
+
+        # to exit out of dialog on cancel button
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return None, None
+
+        dlg.Destroy()
+
+        week_end = dlg.week_end_ctrl.GetValue().Format('%m/%d/%y')
+        period_dates = [i.GetValue().Format('%m/%d/%y') for i in \
+                        dlg.period_date_ctrls]
+
+        return week_end, period_dates
 
 
 def main():
