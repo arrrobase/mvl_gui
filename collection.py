@@ -5,6 +5,7 @@ from datetime import datetime as dt
 from random import randint
 import xlsxwriter
 # from collections import OrderedDict
+import cPickle
 
 
 class Collection:
@@ -100,19 +101,38 @@ class Collection:
         return pd.concat(self.df_washer, self.df_dryer)
 
     @staticmethod
-    def update(df, row, value):
-        df.set_value(row, 'weights', value)
-        # df.set_value(row, 'amounts', Money.from_weight(value))
+    def set_value(df, row, value, period=None):
+        if period is None:
+            df.set_value(row, 'weights', value)
 
-        # propagate changes
-        period = list(map(Money.from_weight, df['weights']))
-        diff = [period[0]] + list(np.diff(period))
+        else:
+            df.set_value(row, (period, 'weights'), value)
 
-        for ind, i in enumerate(diff):
-            if i < 0:
-                diff[ind] = Money.from_weight(df['weights'][ind])
+        Collection.update(df, period)
 
-        df['amounts'] = diff
+    @staticmethod
+    def update(df, period=None):
+        if period is None:
+            # propagate changes
+            amounts = list(map(Money.from_weight, df['weights']))
+            diff = [amounts[0]] + list(np.diff(amounts))
+
+            for ind, i in enumerate(diff):
+                if i < 0:
+                    diff[ind] = Money.from_weight(df['weights'][ind])
+
+            df['amounts'] = diff
+
+        else:
+            # propagate changes
+            amounts = list(map(Money.from_weight, df[period]['weights']))
+            diff = [amounts[0]] + list(np.diff(amounts))
+
+            for ind, i in enumerate(diff):
+                if i < 0:
+                    diff[ind] = Money.from_weight(df[period]['weights'][ind])
+
+            df[period]['amounts'] = diff
 
 
     @staticmethod
@@ -211,3 +231,9 @@ class Collection:
         workbook.close()
         print
         print 'saved'
+
+        # print '\npickling...'
+        # with open('test_pickle.pkl', 'wb') as f:
+        #     cPickle.dump(self, f, -1)
+        # print '\npickled'
+

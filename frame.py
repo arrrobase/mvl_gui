@@ -10,6 +10,7 @@ from wx import calendar
 from money import Money
 from collection import Collection
 from copy import deepcopy
+import cPickle
 
 dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 dryer_names += ['{}'.format(i) for i in range(67, 71)]
@@ -53,6 +54,9 @@ col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
 col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
                   washer_names, dryer_names)
 
+with open('test_pickle.pkl', 'rb') as f:
+    col3 = cPickle.load(f)
+
 today = datetime.datetime.now()
 
 empty_col = Collection(today.strftime('%m/%d/%y'),
@@ -91,7 +95,7 @@ class ListPanel(wx.Panel):
         self.list_control.InsertColumn(1, 'Periods')
 
         # temp add for shape
-        cols = [col1, col2]
+        cols = [col1, col2, col3]
 
         # add cols to list control, and make lookup dict
         self.col_dict = {}
@@ -438,7 +442,7 @@ class MyMachineDataSource(wx.grid.PyGridTableBase):
 
     def SetValue(self, row, col, value):
         if col == 0:
-            Collection.update(self.data, row, value)
+            Collection.set_value(self.data, row, value)
 
         msg = wx.grid.GridTableMessage(self.GetView().Table,
                                        wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
