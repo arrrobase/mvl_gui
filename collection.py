@@ -91,7 +91,7 @@ class Collection:
         return df_meters, df_changers, df_others
 
     def __repr__(self):
-        return 'Week end: {}, periods: {}.'.format(self.week_end.strftime(
+        return 'Week end: {}, periods: {}'.format(self.week_end.strftime(
             '%m/%d/%y'), self.num_periods)
 
     def __lt__(self, other):

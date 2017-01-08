@@ -11,6 +11,7 @@ from money import Money
 from collection import Collection
 from copy import deepcopy
 import cPickle
+from load_mvl_main import load_mvl_main
 
 dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 dryer_names += ['{}'.format(i) for i in range(67, 71)]
@@ -201,7 +202,7 @@ class ListPanel(wx.Panel):
         self.df_changers = col.df_changers
         self.df_others = col.df_others
 
-    def add_collection(self, col):
+    def add_collection(self, col, load=True):
         """
         Adds a new collection.
         :param col:
@@ -220,7 +221,8 @@ class ListPanel(wx.Panel):
 
         if col is not self.col:
             self.frame.save_collection()
-            self.frame.load_collection(col)
+            if load:
+                self.frame.load_collection(col)
 
 
 class CalendarPanel(wx.Panel):
@@ -704,6 +706,8 @@ class MyMenuBar(wx.MenuBar):
         # file menus
         file_new = file_menu.Append(wx.ID_NEW, '&New', 'New collection')
         file_save = file_menu.Append(wx.ID_SAVE, '&Save', 'Save collection')
+        file_open = file_menu.Append(wx.ID_OPEN, '&Open MVL',
+                                     'Open MVL Main')
         file_quit = file_menu.Append(wx.ID_EXIT, '&Quit', 'Quit application')
 
         # add top level menus to menu bar
@@ -711,6 +715,7 @@ class MyMenuBar(wx.MenuBar):
 
         self.Bind(wx.EVT_MENU, self.on_file_new, file_new)
         self.Bind(wx.EVT_MENU, self.on_file_save, file_save)
+        self.Bind(wx.EVT_MENU, self.on_file_open, file_open)
         # self.Bind(wx.EVT_MENU, self.on_file_quit, file_quit)
 
     def on_file_new(self, event):
@@ -727,6 +732,13 @@ class MyMenuBar(wx.MenuBar):
         """
         self.frame.save_collection()
         self.frame.col.to_csv()
+
+    def on_file_open(self, event):
+        """
+        Passes new call to frame.
+        :param event:
+        """
+        self.frame.load_mvl()
 
 
 class MyCollectionDialog(wx.Dialog):
@@ -926,6 +938,28 @@ class MyFrame(wx.Frame):
                         dlg.period_date_ctrls]
 
         return week_end, period_dates
+
+    def load_mvl(self):
+        path = self.load_mvl_prompt()
+        new_cols = load_mvl_main(path, dryer_names, washer_names)
+
+        for col in new_cols:
+            self.list_panel.add_collection(col, False)
+
+    def load_mvl_prompt(self):
+        """
+        Prompts for dir of MVL main.
+        """
+        open_dialog = wx.FileDialog(self,
+                                    message='Path to MVL main',
+                                    wildcard='*.xlsx',
+                                    style=wx.FD_OPEN)
+
+        # to exit out of popup on cancel button
+        if open_dialog.ShowModal() == wx.ID_CANCEL:
+            return
+
+        return open_dialog.GetPath()
 
 
 def main():
