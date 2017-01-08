@@ -8,46 +8,46 @@ import numpy as np
 import datetime
 from wx import calendar
 from money import Money
-from collection import Collection
+from collection import Collection, washer_names, dryer_names
 from copy import deepcopy
 import cPickle
 from load_mvl_main import load_mvl_main
 
-dryer_names  = ['{}'.format(i) for i in range(1, 17)]
-dryer_names += ['{}'.format(i) for i in range(67, 71)]
-dryer_names += ['{}'.format(i) for i in range(72, 76)]
-dryer_names += ['20']
-dryer_names += ['{}'.format(i) for i in range(23, 28)]
-
-washer_names = ['A51',
-                'B51',
-                'S52',
-                'A40',
-                'W50',
-                'E26',
-                'F26',
-                'D25',
-                'C25',
-                'B25',
-                'A25',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                '*12',
-                'E20',
-                'D20',
-                'C20',
-                'B20',
-                'A20'
-                ]
+# dryer_names  = ['{}'.format(i) for i in range(1, 17)]
+# dryer_names += ['{}'.format(i) for i in range(67, 71)]
+# dryer_names += ['{}'.format(i) for i in range(72, 76)]
+# dryer_names += ['20']
+# dryer_names += ['{}'.format(i) for i in range(23, 28)]
+#
+# washer_names = ['A51',
+#                 'B51',
+#                 'S52',
+#                 'A40',
+#                 'W50',
+#                 'E26',
+#                 'F26',
+#                 'D25',
+#                 'C25',
+#                 'B25',
+#                 'A25',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 '*12',
+#                 'E20',
+#                 'D20',
+#                 'C20',
+#                 'B20',
+#                 'A20'
+#                 ]
 
 # col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
 #                   washer_names, dryer_names)
