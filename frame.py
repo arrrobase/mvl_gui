@@ -49,17 +49,17 @@ washer_names = ['A51',
                 'A20'
                 ]
 
-col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
-                  washer_names, dryer_names)
-
-col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
-                  washer_names, dryer_names)
-
-with open('test_pickle.pkl', 'rb') as f:
-    col3 = cPickle.load(f)
-
+# col1 = Collection('11/25/16', ['11/21/16', '11/25/16'],
+#                   washer_names, dryer_names)
+#
+# col2 = Collection('11/18/16', ['11/14/16', '11/16/16', '11/18/16'],
+#                   washer_names, dryer_names)
+#
+# with open('test_pickle.pkl', 'rb') as f:
+#     col3 = cPickle.load(f)
+#
 today = datetime.datetime.now()
-
+#
 empty_col = Collection(today.strftime('%m/%d/%y'),
                        [(today - datetime.timedelta(days=4)).strftime('%m/%d/%y'),
                         today.strftime('%m/%d/%y')],
@@ -96,16 +96,17 @@ class ListPanel(wx.Panel):
         self.list_control.InsertColumn(1, 'Periods')
 
         # temp add for shape
-        cols = [col1, col2, col3]
+        # cols = [col1, col2, col3]
+        cols = [empty_col]
 
         # add cols to list control, and make lookup dict
         self.col_dict = {}
-        for ind, col in enumerate(sorted(cols)):
-            we_string = col.week_end.strftime('%m/%d/%y')
-            self.list_control.InsertStringItem(ind, we_string)
-            self.list_control.SetStringItem(ind, 1, str(col.num_periods))
-            self.list_control.SetItemData(ind, col.id)
-            self.col_dict[col.id] = col
+        # for ind, col in enumerate(sorted(cols)):
+        #     we_string = col.week_end.strftime('%m/%d/%y')
+        #     self.list_control.InsertStringItem(ind, we_string)
+        #     self.list_control.SetStringItem(ind, 1, str(col.num_periods))
+        #     self.list_control.SetItemData(ind, col.id)
+        #     self.col_dict[col.id] = col
 
         panel_sizer.Add(self.list_control,
                         flag=wx.EXPAND,
@@ -859,9 +860,9 @@ class MyFrame(wx.Frame):
 
         self.load_collection(empty_col)
 
-        last = self.list_panel.list_control.GetItemCount() - 1
-        col = self.list_panel.col_dict[self.list_panel.list_control.GetItemData(last)]
-        self.load_collection(col)
+        # last = self.list_panel.list_control.GetItemCount() - 1
+        # col = self.list_panel.col_dict[self.list_panel.list_control.GetItemData(last)]
+        # self.load_collection(col)
 
         # top and machine sizer
         top_machine_sizer = wx.BoxSizer(wx.VERTICAL)
