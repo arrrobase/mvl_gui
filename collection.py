@@ -8,15 +8,57 @@ import xlsxwriter
 import cPickle
 
 
+
+dryer_names  = ['{}'.format(i) for i in range(1, 17)]
+dryer_names += ['{}'.format(i) for i in range(67, 71)]
+dryer_names += ['{}'.format(i) for i in range(72, 76)]
+dryer_names += ['20']
+dryer_names += ['{}'.format(i) for i in range(23, 28)]
+
+washer_names = ['A51',
+                'B51',
+                'S52',
+                'A40',
+                'W50',
+                'E26',
+                'F26',
+                'D25',
+                'C25',
+                'B25',
+                'A25',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                '*12',
+                'E20',
+                'D20',
+                'C20',
+                'B20',
+                'A20'
+                ]
+
+
 class Collection:
     """
     Class containing 1 week of collections.
     """
-    def __init__(self, week_end, collection_dates, washer_names, dryer_names):
+    def __init__(self, week_end, collection_dates, washer_names,
+                 dryer_names, sheet_name=None):
 
-        self.id = id(self)
+        # self.id = id(self)
+        self.sheet_name = sheet_name
 
         self.week_end = dt.strptime(week_end, '%m/%d/%y')
+        self.id = hash(self.week_end.strftime('%m/%d/%y'))
+
         self.num_periods = len(collection_dates)
         self.period_dates = list(map(lambda date: dt.strptime(date, '%m/%d/%y'), collection_dates))
 
@@ -53,6 +95,7 @@ class Collection:
 
         return df
 
+    # @profile
     def make_other_dfs(self):
         """
         Makes dfs for meters, changer, and other coin amounts
@@ -66,7 +109,7 @@ class Collection:
                   'lights']
 
         df_meters = pd.DataFrame({'meters': meters})
-        df_meters['readings'] = [np.NAN for i in meters]
+        df_meters['readings'] = [np.NAN] * len(meters)
 
         changers = ['1',
                     '5',
@@ -77,15 +120,15 @@ class Collection:
                     'error']
 
         df_changers = pd.DataFrame({'bills': changers})
-        df_changers['left'] = [np.NAN for i in changers]
-        df_changers['right'] = [np.NAN for i in changers]
+        df_changers['left'] = [np.NAN] * len(changers)
+        df_changers['right'] = [np.NAN] * len(changers)
 
         labels = ['Total Weekly',
                   'Soap',
                   'Barrel',
                   'Purse']
 
-        amounts = [Money() for i in labels]
+        amounts = [Money()] * len(labels)
         df_others = pd.DataFrame({'labels': labels, 'amounts':amounts})
 
         return df_meters, df_changers, df_others
@@ -121,7 +164,7 @@ class Collection:
                 if i < 0:
                     diff[ind] = Money.from_weight(df['weights'][ind])
 
-            df['amounts'] = diff
+            df.loc['amounts'] = diff
 
         else:
             # propagate changes
@@ -132,7 +175,7 @@ class Collection:
                 if i < 0:
                     diff[ind] = Money.from_weight(df[period]['weights'][ind])
 
-            df[period]['amounts'] = diff
+            df.loc[(period, 'amounts')] = diff
 
 
     @staticmethod

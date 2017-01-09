@@ -97,7 +97,7 @@ class ListPanel(wx.Panel):
 
         # temp add for shape
         # cols = [col1, col2, col3]
-        cols = [empty_col]
+        # cols = [empty_col]
 
         # add cols to list control, and make lookup dict
         self.col_dict = {}
@@ -159,14 +159,22 @@ class ListPanel(wx.Panel):
 
         return ret
 
-    def on_double_click(self, event):
+    def on_double_click(self, event=None, col_id=None):
         """
         Updates attributes, calls load.
 
         :param event:
         """
-        selected = event.m_itemIndex
-        col = self.col_dict[self.list_control.GetItemData(selected)]
+        if event is not None:
+            selected = event.m_itemIndex
+            col = self.col_dict[self.list_control.GetItemData(selected)]
+        elif col_id is not None:
+            try:
+                col = self.col_dict[col_id]
+            except KeyError:
+                return
+        else:
+            raise('Not found')
 
         if col is not self.col:
             self.frame.save_collection()
@@ -208,22 +216,23 @@ class ListPanel(wx.Panel):
         Adds a new collection.
         :param col:
         """
-        we_string = col.week_end.strftime('%m/%d/%y')
-        ind = self.list_control.GetItemCount()
+        if col.id not in self.col_dict:
+            we_string = col.week_end.strftime('%m/%d/%y')
+            ind = self.list_control.GetItemCount()
 
-        self.list_control.InsertStringItem(ind, we_string)
-        self.list_control.SetStringItem(ind, 1, str(col.num_periods))
-        self.list_control.SetItemData(ind, col.id)
-        self.col_dict[col.id] = col
+            self.list_control.InsertStringItem(ind, we_string)
+            self.list_control.SetStringItem(ind, 1, str(col.num_periods))
+            self.list_control.SetItemData(ind, col.id)
+            self.col_dict[col.id] = col
 
-        # update calendar panel
-        self.frame.calendar_panel.add_day(col.week_end)
-        self.frame.calendar_panel.reset_cal()
+            # update calendar panel
+            self.frame.calendar_panel.add_day(col.week_end)
+            self.frame.calendar_panel.reset_cal()
 
-        if col is not self.col:
-            self.frame.save_collection()
-            if load:
-                self.frame.load_collection(col)
+            if col is not self.col:
+                self.frame.save_collection()
+                if load:
+                    self.frame.load_collection(col)
 
 
 class CalendarPanel(wx.Panel):
@@ -240,10 +249,12 @@ class CalendarPanel(wx.Panel):
 
         # calendar control
         self.calendar_control = calendar.GenericCalendarCtrl(parent=self,
-            style=calendar.CAL_SEQUENTIAL_MONTH_SELECTION)
+            # style=calendar.CAL_SEQUENTIAL_MONTH_SELECTION
+                                                             )
 
         panel_sizer.Add(self.calendar_control,
-                        flag=wx.EXPAND)
+                        flag=wx.EXPAND | wx.TOP,
+                        border=1)
 
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
@@ -262,6 +273,10 @@ class CalendarPanel(wx.Panel):
 
         self.Bind(calendar.EVT_CALENDAR_YEAR,
                   self.reset_cal,
+                  self.calendar_control)
+
+        self.Bind(calendar.EVT_CALENDAR,
+                  self.on_day_clicked,
                   self.calendar_control)
 
     def add_day(self, date):
@@ -290,6 +305,17 @@ class CalendarPanel(wx.Panel):
 
         if event is None:
             self.Refresh()
+
+    def on_day_clicked(self, event):
+        """
+        """
+        # turn wx.datetime into datetime.date
+        date = self.calendar_control.GetDate()
+        ymd = map(int, date.FormatISODate().split('-'))
+        date = datetime.date(*ymd)
+
+        col_id = hash(date.strftime('%m/%d/%y'))
+        self.frame.list_panel.on_double_click(col_id=col_id)
 
 
 class MeterPanel(wx.Panel):
@@ -942,9 +968,9 @@ class MyFrame(wx.Frame):
 
     def load_mvl(self):
         path = self.load_mvl_prompt()
-        new_cols = load_mvl_main(path, dryer_names, washer_names)
+        new_cols = load_mvl_main(path)
 
-        for col in new_cols:
+        for col in sorted(new_cols, reverse=True):
             self.list_panel.add_collection(col, False)
 
     def load_mvl_prompt(self):
