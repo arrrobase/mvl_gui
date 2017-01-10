@@ -229,10 +229,9 @@ class ListPanel(wx.Panel):
             self.frame.calendar_panel.add_day(col.week_end)
             self.frame.calendar_panel.reset_cal()
 
-            if col is not self.col:
+            if load and col is not self.col:
                 self.frame.save_collection()
-                if load:
-                    self.frame.load_collection(col)
+                self.frame.load_collection(col)
 
 
 class CalendarPanel(wx.Panel):
@@ -943,7 +942,6 @@ class MyFrame(wx.Frame):
             return
 
         new_col = Collection(week_end, period_dates, washer_names, dryer_names)
-        print new_col
 
         self.list_panel.add_collection(new_col)
 

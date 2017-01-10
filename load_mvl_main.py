@@ -42,8 +42,8 @@ def get_sheet_data(sheet, sh, changer_rows, washer_rows, dryer_rows):
         period_1_lb = [str(int(i)) if i != '' else '' for i in period_1_lb]
         period_1_oz = [str(i) if i != '' else '' for i in period_1_oz]
 
-        period_1_washer = [' '.join([i, j]) for i, j in list(zip(period_1_lb,
-                                                                 period_1_oz))]
+        period_1_washer = [' '.join([i, j]).strip() for i, j in list(zip(
+            period_1_lb, period_1_oz))]
         period_1_washer += [''] * 23
 
         # period 2 washers
@@ -59,7 +59,7 @@ def get_sheet_data(sheet, sh, changer_rows, washer_rows, dryer_rows):
         period_2_washer_lb = [str(int(i)) if i != '' else '' for i in period_2_washer_lb]
         period_2_washer_oz = [str(i) if i != '' else '' for i in period_2_washer_oz]
 
-        period_2_washer = [' '.join([i, j]) for i, j in list(zip(period_2_washer_lb,
+        period_2_washer = [' '.join([i, j]).strip() for i, j in list(zip(period_2_washer_lb,
                                                                  period_2_washer_oz))]
 
         # period 2 dryers
@@ -73,7 +73,7 @@ def get_sheet_data(sheet, sh, changer_rows, washer_rows, dryer_rows):
         period_2_dryer_lb = [str(int(i)) if i != '' else '' for i in period_2_dryer_lb]
         period_2_dryer_oz = [str(i) if i != '' else '' for i in period_2_dryer_oz]
 
-        period_2_dryer = [' '.join([i, j]) for i, j in list(zip(period_2_dryer_lb,
+        period_2_dryer = [' '.join([i, j]).strip() for i, j in list(zip(period_2_dryer_lb,
                                                                 period_2_dryer_oz))]
 
         # make collection

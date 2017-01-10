@@ -7,8 +7,6 @@ import xlsxwriter
 # from collections import OrderedDict
 import cPickle
 
-
-
 dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 dryer_names += ['{}'.format(i) for i in range(67, 71)]
 dryer_names += ['{}'.format(i) for i in range(72, 76)]
@@ -95,7 +93,7 @@ class Collection:
 
         return df
 
-    # @profile
+
     def make_other_dfs(self):
         """
         Makes dfs for meters, changer, and other coin amounts
@@ -141,7 +139,7 @@ class Collection:
         return self.week_end < other.week_end
 
     def merge_machines(self):
-        return pd.concat(self.df_washer, self.df_dryer)
+        return pd.concat([self.df_washer, self.df_dryer])
 
     @staticmethod
     def set_value(df, row, value, period=None):
@@ -175,7 +173,7 @@ class Collection:
                 if i < 0:
                     diff[ind] = Money.from_weight(df[period]['weights'][ind])
 
-            df.loc[(period, 'amounts')] = diff
+            df.loc(axis=1)[period, 'amounts'] = diff
 
 
     @staticmethod
@@ -227,8 +225,23 @@ class Collection:
     #
     #     return to_print
 
-    # def get_sum(self):
-    #     return Money(self.df.sum().sum())
+    def get_sums(self):
+        self.sums = {}
+
+        for i in range(self.num_periods):
+            self.sums[i] = {}
+            self.sums[i]['washer'] = self.df_washer.loc(axis=1)[i, 'amounts'].sum()
+            self.sums[i]['dryer'] = self.df_dryer.loc(axis=1)[i, 'amounts'].sum()
+
+            self.sums[i]['total'] = self.sums[i]['washer'] + self.sums[i]['dryer']
+
+        self.sums['washer_total'] = sum([self.sums[i]['washer'] for i in
+                                         range(self.num_periods)])
+        self.sums['dryer_total'] = sum([self.sums[i]['dryer'] for i in
+                                         range(self.num_periods)])
+        self.sums['total'] = self.sums['washer_total'] + self.sums['dryer_total']
+
+        return self.sums
 
     # def get_plots(self):
     #     # if self.grouped is None:
