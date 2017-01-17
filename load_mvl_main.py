@@ -1,8 +1,10 @@
 import xlrd
 from xlrd import xldate as xd
 from collection import Collection, washer_names, dryer_names
+from money import Money
 import numpy as np
 # from line_profiler import profile
+
 
 def get_sheet_names(wb):
     sheet_names = wb.sheet_names()
@@ -34,6 +36,12 @@ def get_sheet_data(sheet, sh, changer_rows, washer_rows, dryer_rows):
 
         else:
             changer_left = None
+
+        # other coin amounts
+        weekly_lb = str(sh.cell_value(116, 23))
+        weekly_oz = str(sh.cell_value(116, 24))
+        weekly = ' '.join([weekly_lb, weekly_oz]).strip()
+        weekly = Money.from_weight(weekly)
 
         # period 1 washers
         period_1_lb = sh.col_values(7, 32, 37)
@@ -81,7 +89,7 @@ def get_sheet_data(sheet, sh, changer_rows, washer_rows, dryer_rows):
                          [period_1.strftime('%m/%d/%y'), end.strftime('%m/%d/%y')],
                          washer_names, dryer_names, sheet_name=sheet)
 
-        # set meter values
+        # set values
         col.df_meters['readings'] = meters
 
         col.df_washer[(0, 'weights')] = period_1_washer
@@ -96,6 +104,8 @@ def get_sheet_data(sheet, sh, changer_rows, washer_rows, dryer_rows):
         col.df_changers['right'] = changer_right
         if changer_left is not None:
             col.df_changers['left'] = changer_left
+
+        col.df_others.loc[0] = weekly
 
         return col
 

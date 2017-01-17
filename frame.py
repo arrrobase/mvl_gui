@@ -3,6 +3,7 @@ Main frame
 """
 
 import wx, wx.grid
+import wx.lib.mixins.listctrl as listsortmixin
 import pandas as pd
 import numpy as np
 import datetime
@@ -10,8 +11,9 @@ from wx import calendar
 from money import Money
 from collection import Collection, washer_names, dryer_names
 from copy import deepcopy
-import cPickle
+import os
 from load_mvl_main import load_mvl_main
+from save_to_mvl_main import save_to_mvl_main
 
 # dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 # dryer_names += ['{}'.format(i) for i in range(67, 71)]
@@ -66,7 +68,7 @@ empty_col = Collection(today.strftime('%m/%d/%y'),
                        washer_names, dryer_names)
 
 
-class ListPanel(wx.Panel):
+class ListPanel(wx.Panel, listsortmixin.ColumnSorterMixin):
     """
     Panel containing list of collection dates.
     """
@@ -348,6 +350,17 @@ class MeterPanel(wx.Panel):
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
 
+        self.Bind(wx.EVT_KEY_DOWN, self.on_enter)
+
+    def on_enter(self, event):
+        if event.GetKeyCode() == wx.WXK_RETURN or event.GetKeyCode() == \
+                wx.WXK_NUMPAD_ENTER:
+
+                if self.grid.GetGridCursorRow() == 5:
+                    self.GetParent().move_to_next(0)
+
+        event.Skip()
+
     def update_grid(self, values):
         for i, value in enumerate(values):
             self.grid.Table.SetValue(i, 0, value)
@@ -387,6 +400,17 @@ class ChangerPanel(wx.Panel):
 
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
+
+        self.Bind(wx.EVT_KEY_DOWN, self.on_enter)
+
+    def on_enter(self, event):
+        if event.GetKeyCode() == wx.WXK_RETURN or event.GetKeyCode() == \
+                wx.WXK_NUMPAD_ENTER:
+
+                if self.grid.GetGridCursorRow() == 6:
+                    self.GetParent().move_to_next(1)
+
+        event.Skip()
 
     def update_grid(self, values):
         left = values['left']
@@ -432,6 +456,17 @@ class OtherPanel(wx.Panel):
 
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
+
+        self.Bind(wx.EVT_KEY_DOWN, self.on_enter)
+
+    def on_enter(self, event):
+        if event.GetKeyCode() == wx.WXK_RETURN or event.GetKeyCode() == \
+                wx.WXK_NUMPAD_ENTER:
+
+                if self.grid.GetGridCursorRow() == 3:
+                    self.GetParent().move_to_next(2)
+
+        event.Skip()
 
     def update_grid(self, values):
         for i, value in enumerate(values):
@@ -636,6 +671,19 @@ class PeriodPanel(wx.Panel):
 
         self.SetSizer(panel_sizer)
 
+        self.Bind(wx.EVT_KEY_DOWN, self.on_enter)
+
+    def on_enter(self, event):
+        if event.GetKeyCode() == wx.WXK_RETURN or event.GetKeyCode() == \
+                wx.WXK_NUMPAD_ENTER:
+
+                if self.washer_grid.GetGridCursorRow() == 27:
+                    self.washer_grid.GoToCell(0, 0)
+                    self.dryer_grid.SetFocus()
+                    self.dryer_grid.GoToCell(0, 0)
+
+        event.Skip()
+
 
 class MachinePanel(wx.Panel):
     """
@@ -710,6 +758,22 @@ class TopPanel(wx.Panel):
         self.SetSizer(panel_sizer)
         panel_sizer.Fit(self)
 
+    def move_to_next(self, which):
+        if which == 0:
+            self.meter_panel.grid.GoToCell(0, 0)
+            self.changer_panel.grid.SetFocus()
+            self.changer_panel.grid.GoToCell(0, 0)
+
+        if which == 1:
+            self.changer_panel.grid.GoToCell(0, 0)
+            self.other_panel.grid.SetFocus()
+            self.other_panel.grid.GoToCell(0, 0)
+
+        if which == 2:
+            self.frame.machine_panel.period_panels[0].washer_grid.SetFocus()
+            self.frame.machine_panel.period_panels[0].washer_grid.GoToCell(0, 0)
+
+
     def load_collection(self):
         self.meter_panel.update_grid(self.frame.col.df_meters['readings'])
         self.changer_panel.update_grid(self.frame.col.df_changers[['left',
@@ -731,7 +795,8 @@ class MyMenuBar(wx.MenuBar):
 
         # file menus
         file_new = file_menu.Append(wx.ID_NEW, '&New', 'New collection')
-        file_save = file_menu.Append(wx.ID_SAVE, '&Save', 'Save collection')
+        file_save = file_menu.Append(wx.ID_SAVE, '&Save sheet',
+                                     'Save collection')
         file_open = file_menu.Append(wx.ID_OPEN, '&Open MVL',
                                      'Open MVL Main')
         file_quit = file_menu.Append(wx.ID_EXIT, '&Quit', 'Quit application')
@@ -757,7 +822,7 @@ class MyMenuBar(wx.MenuBar):
         :param event:
         """
         self.frame.save_collection()
-        self.frame.col.to_csv()
+        self.frame.save_mvl()
 
     def on_file_open(self, event):
         """
@@ -864,6 +929,7 @@ class MyFrame(wx.Frame):
         super(MyFrame, self).__init__(None, title='MVL collections')
 
         self.col = None
+        self.workbook = None
 
         # make calendar and list
         self.list_panel = ListPanel(self)
@@ -966,7 +1032,8 @@ class MyFrame(wx.Frame):
 
     def load_mvl(self):
         path = self.load_mvl_prompt()
-        new_cols = load_mvl_main(path)
+        self.workbook = os.path.abspath(path)
+        new_cols = load_mvl_main(self.workbook)
 
         for col in sorted(new_cols, reverse=True):
             self.list_panel.add_collection(col, False)
@@ -985,6 +1052,17 @@ class MyFrame(wx.Frame):
             return
 
         return open_dialog.GetPath()
+
+    def save_mvl(self):
+        """
+        Saves collection to workbook.
+        """
+        if self.workbook is None:
+            raise IOError('No workbook loaded to save to.')
+
+        collection = self.list_panel.col
+        workbook = self.workbook
+
 
 
 def main():

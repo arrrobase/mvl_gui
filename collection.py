@@ -162,7 +162,7 @@ class Collection:
                 if i < 0:
                     diff[ind] = Money.from_weight(df['weights'][ind])
 
-            df.loc['amounts'] = diff
+            df.loc(axis=1)['amounts'] = diff
 
         else:
             # propagate changes
@@ -225,23 +225,41 @@ class Collection:
     #
     #     return to_print
 
-    def get_sums(self):
-        self.sums = {}
+    def get_machine_sums(self):
+        self.machine_sums = {}
 
         for i in range(self.num_periods):
-            self.sums[i] = {}
-            self.sums[i]['washer'] = self.df_washer.loc(axis=1)[i, 'amounts'].sum()
-            self.sums[i]['dryer'] = self.df_dryer.loc(axis=1)[i, 'amounts'].sum()
+            self.machine_sums[i] = {}
+            self.machine_sums[i]['washer'] = self.df_washer.loc(axis=1)[i, 'amounts'].sum()
+            self.machine_sums[i]['dryer'] = self.df_dryer.loc(axis=1)[i, 'amounts'].sum()
 
-            self.sums[i]['total'] = self.sums[i]['washer'] + self.sums[i]['dryer']
+            self.machine_sums[i]['total'] = self.machine_sums[i]['washer'] + self.machine_sums[i]['dryer']
 
-        self.sums['washer_total'] = sum([self.sums[i]['washer'] for i in
+        self.machine_sums['washer_total'] = sum([self.machine_sums[i]['washer'] for i in
                                          range(self.num_periods)])
-        self.sums['dryer_total'] = sum([self.sums[i]['dryer'] for i in
+        self.machine_sums['dryer_total'] = sum([self.machine_sums[i]['dryer'] for i in
                                          range(self.num_periods)])
-        self.sums['total'] = self.sums['washer_total'] + self.sums['dryer_total']
+        self.machine_sums['total'] = self.machine_sums['washer_total'] + self.machine_sums['dryer_total']
 
-        return self.sums
+        return self.machine_sums
+
+    def get_changer_sums(self):
+        self.changer_sums = {}
+
+        df = self.df_changers
+
+        sums = df[['left', 'right']][:4].multiply(df['bills'][:4].astype(int), axis=0).sum()
+
+        self.changer_sums['left'] = sums['left']
+        self.changer_sums['right'] = sums['right']
+
+        sums = list(sums)
+        sums.append(float(self.df_others['amounts'].loc[0]))
+
+        self.changer_sums['total'] = sum([i for i in sums if not
+        np.isnan(i)])
+
+        return self.changer_sums
 
     # def get_plots(self):
     #     # if self.grouped is None:
