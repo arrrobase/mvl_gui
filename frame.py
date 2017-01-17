@@ -14,6 +14,7 @@ from copy import deepcopy
 import os
 from load_mvl_main import load_mvl_main
 from save_to_mvl_main import save_to_mvl_main
+from sortedcontainers import SortedList
 
 # dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 # dryer_names += ['{}'.format(i) for i in range(67, 71)]
@@ -101,8 +102,9 @@ class ListPanel(wx.Panel, listsortmixin.ColumnSorterMixin):
         # cols = [col1, col2, col3]
         # cols = [empty_col]
 
-        # add cols to list control, and make lookup dict
+        # add cols to list control, and make lookup dict, and index list
         self.col_dict = {}
+        self.index_list = SortedList()
         # for ind, col in enumerate(sorted(cols)):
         #     we_string = col.week_end.strftime('%m/%d/%y')
         #     self.list_control.InsertStringItem(ind, we_string)
@@ -220,7 +222,9 @@ class ListPanel(wx.Panel, listsortmixin.ColumnSorterMixin):
         """
         if col.id not in self.col_dict:
             we_string = col.week_end.strftime('%m/%d/%y')
-            ind = self.list_control.GetItemCount()
+
+            self.index_list.add(col.week_end)
+            ind = self.index_list.index(col.week_end)
 
             self.list_control.InsertStringItem(ind, we_string)
             self.list_control.SetStringItem(ind, 1, str(col.num_periods))
@@ -1062,6 +1066,11 @@ class MyFrame(wx.Frame):
 
         collection = self.list_panel.col
         workbook = self.workbook
+
+        ind = self.list_panel.index_list.index(collection.week_end)
+        previous_we = self.list_panel.index_list[ind - 1]
+
+        save_to_mvl_main(workbook, previous_we, collection)
 
 
 
