@@ -668,6 +668,17 @@ class PeriodPanel(wx.Panel):
             self.frame.list_panel.dryer_period_dfs[period_num],
             MyMachineDataSource)
 
+        color = wx.Colour(220, 220, 220, 255)
+
+        for i in range(2):
+            for j in range(5, 11):
+                self.washer_grid.SetCellBackgroundColour(j, i, color)
+            for j in range(23, 28):
+                self.washer_grid.SetCellBackgroundColour(j, i, color)
+
+            for j in range(10, 16):
+                self.dryer_grid.SetCellBackgroundColour(j, i, color)
+
         # panel sizer
         panel_sizer = wx.BoxSizer(wx.HORIZONTAL)
 

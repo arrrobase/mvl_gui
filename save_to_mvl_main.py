@@ -100,13 +100,35 @@ def save_to_mvl_main(workbook, previous_we, col):
 
             return lbs, ozes
 
-        # write period 1 washers
+        # write period 1 and 2 washers
         period_1_washer = list(col.df_washer[(0, 'weights')])
         period_1_lb, period_1_oz = unpack(period_1_washer)
 
+        period_2_washer = list(col.df_washer[(1, 'weights')])
+        period_2_lb, period_2_oz = unpack(period_2_washer)
+
         for ind, i in enumerate(washer_rows):
+            # period 1
             sh.Cells(i, 8).Value = period_1_lb[ind]
             sh.Cells(i, 9).Value = period_1_oz[ind]
+            # period 2
+            sh.Cells(i, 13).Value = period_2_lb[ind]
+            sh.Cells(i, 14).Value = period_2_oz[ind]
+
+        # write period 1 and 2 dryers
+        period_1_dryer = list(col.df_dryer[(0, 'weights')])
+        period_1_lb, period_1_oz = unpack(period_1_dryer)
+
+        period_2_dryer = list(col.df_dryer[(1, 'weights')])
+        period_2_lb, period_2_oz = unpack(period_2_dryer)
+
+        for ind, i in enumerate(dryer_rows):
+            # period 1
+            sh.Cells(i, 8).Value = period_1_lb[ind]
+            sh.Cells(i, 9).Value = period_1_oz[ind]
+            # period 2
+            sh.Cells(i, 13).Value = period_2_lb[ind]
+            sh.Cells(i, 14).Value = period_2_oz[ind]
 
         wb.Save()
 
@@ -119,4 +141,4 @@ def save_to_mvl_main(workbook, previous_we, col):
     excel.Quit()
     del excel
 
-    print 'Done'
+    print 'saved sheet "{}" in {}.'.format(new_name, wb_path)
