@@ -412,8 +412,11 @@ class ChangerPanel(wx.Panel):
                 wx.WXK_NUMPAD_ENTER:
 
                 if self.grid.GetGridCursorRow() == 6:
-                    self.GetParent().move_to_next(1)
-
+                    if self.grid.GetGridCursorCol() == 1:
+                        self.GetParent().move_to_next(1)
+                    else:
+                        self.grid.GoToCell(0, 1)
+                        return
         event.Skip()
 
     def update_grid(self, values):

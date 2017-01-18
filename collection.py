@@ -3,9 +3,6 @@ import pandas as pd
 from money import Money
 from datetime import datetime as dt
 from random import randint
-import xlsxwriter
-# from collections import OrderedDict
-import cPickle
 
 dryer_names  = ['{}'.format(i) for i in range(1, 17)]
 dryer_names += ['{}'.format(i) for i in range(67, 71)]
@@ -92,7 +89,6 @@ class Collection:
         df['names'] = machine_names
 
         return df
-
 
     def make_other_dfs(self):
         """
@@ -271,43 +267,43 @@ class Collection:
     #     import matplotlib.pyplot as plt
     #     plt.show()
 
-    def to_csv(self):
-        print 'saving...'
-        print
-        print self.df_washer
-
-        # Create a workbook and add a worksheet.
-        workbook = xlsxwriter.Workbook('test_out.xlsx')
-        worksheet = workbook.add_worksheet()
-
-        worksheet.write(0, 0, 'Period End')
-
-        # formats
-        date_format = workbook.add_format({'num_format': 'mm/dd/yy'})
-        center_format = workbook.add_format({'align': 'center'})
-
-        date_merge = workbook.add_format({'num_format': 'mm/dd/yy',
-                                          'align': 'center'})
-
-        # write headers
-        for i, date in enumerate(self.period_dates):
-            worksheet.merge_range(0, i*2+1, 0, i*2+2, date, date_merge)
-            worksheet.write(1, i*2+1, 'weights')
-            worksheet.write(1, i*2+2, 'amounts')
-
-        to_write = self.df_washer['names']
-        worksheet.write_column(2, 0, to_write)
-
-        # write data
-        to_write = self.df_washer[0]['weights']
-        worksheet.write_column(2, 1, to_write)
-
-        workbook.close()
-        print
-        print 'saved'
-
-        # print '\npickling...'
-        # with open('test_pickle.pkl', 'wb') as f:
-        #     cPickle.dump(self, f, -1)
-        # print '\npickled'
+    # def to_csv(self):
+    #     print 'saving...'
+    #     print
+    #     print self.df_washer
+    #
+    #     # Create a workbook and add a worksheet.
+    #     workbook = xlsxwriter.Workbook('test_out.xlsx')
+    #     worksheet = workbook.add_worksheet()
+    #
+    #     worksheet.write(0, 0, 'Period End')
+    #
+    #     # formats
+    #     date_format = workbook.add_format({'num_format': 'mm/dd/yy'})
+    #     center_format = workbook.add_format({'align': 'center'})
+    #
+    #     date_merge = workbook.add_format({'num_format': 'mm/dd/yy',
+    #                                       'align': 'center'})
+    #
+    #     # write headers
+    #     for i, date in enumerate(self.period_dates):
+    #         worksheet.merge_range(0, i*2+1, 0, i*2+2, date, date_merge)
+    #         worksheet.write(1, i*2+1, 'weights')
+    #         worksheet.write(1, i*2+2, 'amounts')
+    #
+    #     to_write = self.df_washer['names']
+    #     worksheet.write_column(2, 0, to_write)
+    #
+    #     # write data
+    #     to_write = self.df_washer[0]['weights']
+    #     worksheet.write_column(2, 1, to_write)
+    #
+    #     workbook.close()
+    #     print
+    #     print 'saved'
+    #
+    #     # print '\npickling...'
+    #     # with open('test_pickle.pkl', 'wb') as f:
+    #     #     cPickle.dump(self, f, -1)
+    #     # print '\npickled'
 
